@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ngao-Sauti OS — Android Call Firewall, STK Guard & Consensus Simulator</title>
+  <style>
+    :root {
+      --bg-main: #090b10;
+      --bg-panel: #11151f;
+      --bg-panel-2: #181e2c;
+      --border: #232b3e;
+      --border-light: #313d57;
+      --text: #f1f5f9;
+      --muted: #8b9bb4;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: radial-gradient(circle at 15% 15%, #121a2d 0%, var(--bg-main) 60%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 18px;
+      overflow-x: hidden;
+    }
+
+    svg { display: inline-block; vertical-align: middle; flex-shrink: 0; }
+    .hidden { display: none !important; }
+
+    /* Top Navigation */
+    .top-nav {
+      max-width: 1300px;
+      margin: 0 auto 18px;
+      padding: 12px 20px;
+      background: rgba(17, 21, 31, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand-group { display: flex; align-items: center; gap: 12px; }
+    .brand-logo {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      display: flex; align-items: center; justify-content: center; color: #fff;
+    }
+    .brand-title { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 12px; color: var(--muted); }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border-radius: 6px; font-size: 12px;
+      font-weight: 600; font-family: var(--mono);
+    }
+    .badge-safe { background: rgba(16, 185, 129, 0.12); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-danger { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    /* Workspace Grid */
+    .workspace {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 26px;
+      align-items: start;
+    }
+    @media (min-width: 980px) {
+      .workspace { grid-template-columns: 395px 1fr; }
+    }
+
+    /* ================= ANDROID HARDWARE CHASSIS ================= */
+    .phone-wrapper {
+      position: relative;
+      width: 384px;
+      margin: 0 auto;
+    }
+
+    .hw-btn-vol-up {
+      position: absolute; right: -4px; top: 130px; width: 4px; height: 48px;
+      background: #2e384d; border-radius: 0 4px 4px 0;
+    }
+    .hw-btn-vol-dn {
+      position: absolute; right: -4px; top: 190px; width: 4px; height: 48px;
+      background: #2e384d; border-radius: 0 4px 4px 0;
+    }
+    .hw-btn-power {
+      position: absolute; right: -4px; top: 265px; width: 4px; height: 64px;
+      background: #3b82f6; border-radius: 0 4px 4px 0;
+    }
+
+    .phone-chassis {
+      width: 380px;
+      height: 800px;
+      background: #000;
+      border: 11px solid #1a202c;
+      border-radius: 48px;
+      box-shadow: 
+        0 0 0 2px #2d3748,
+        0 30px 70px rgba(0, 0, 0, 0.85),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .phone-chassis.ringing-shake {
+      animation: phoneRing 0.38s infinite;
+      box-shadow: 0 0 0 2px var(--blue), 0 25px 70px rgba(59, 130, 246, 0.35);
+    }
+
+    .phone-chassis.scam-lock-active {
+      box-shadow: 0 0 0 2px var(--red), 0 25px 70px rgba(239, 68, 68, 0.35);
+    }
+
+    @keyframes phoneRing {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-2px) rotate(-0.5deg); }
+      75% { transform: translateX(2px) rotate(0.5deg); }
+    }
+
+    /* Status Bar */
+    .os-statusbar {
+      height: 36px;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #e2e8f0;
+      background: #070a10;
+      z-index: 40;
+      position: relative;
+    }
+
+    .os-punchhole {
+      width: 13px;
+      height: 13px;
+      background: #020305;
+      border-radius: 50%;
+      box-shadow: inset 0 0 3px rgba(59, 130, 246, 0.4);
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .status-icons { display: flex; align-items: center; gap: 6px; }
+
+    /* Floating Active Call Pill */
+    .ngao-floating-hud {
+      margin: 6px 12px 0;
+      padding: 8px 12px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      z-index: 35;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+      cursor: pointer;
+    }
+    .ngao-floating-hud.hud-danger {
+      background: rgba(69, 10, 10, 0.96);
+      border-color: var(--red);
+    }
+    .hud-top {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; font-weight: 600;
+    }
+    .hud-wave { display: flex; align-items: center; gap: 2px; height: 14px; }
+    .hud-bar { width: 3px; height: 4px; background: var(--cyan); border-radius: 2px; transition: height 0.1s; }
+    .hud-caption {
+      font-family: var(--mono); font-size: 10px; color: #cbd5e1;
+      margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Phone Viewport */
+    .os-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: #090d16;
+    }
+
+    .os-app {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: appOpen 0.18s ease-out;
+    }
+
+    @keyframes appOpen {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ================= 1. HOME SCREEN ================= */
+    .app-home {
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.28) 0%, transparent 50%),
+        radial-gradient(circle at 80% 75%, rgba(6, 182, 212, 0.22) 0%, transparent 50%),
+        linear-gradient(180deg, #0b1120 0%, #060911 100%);
+      padding: 20px 18px 14px;
+      justify-content: space-between;
+    }
+
+    .home-clock-widget { margin-top: 8px; text-align: left; padding-left: 4px; }
+    .home-time { font-size: 50px; font-weight: 300; letter-spacing: -0.04em; line-height: 1; }
+    .home-date { font-size: 12.5px; color: #cbd5e1; margin-top: 6px; font-weight: 500; }
+
+    .home-shield-widget {
+      background: rgba(15, 23, 42, 0.84);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      padding: 13px 15px;
+      cursor: pointer;
+    }
+
+    /* Quick Family Telemetry Pill on Home Screen */
+    .home-telemetry-card {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      border-radius: 14px;
+      padding: 10px 13px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    .home-search-pill {
+      background: rgba(30, 41, 59, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      padding: 9px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .app-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px 8px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .app-icon-btn {
+      background: none; border: none; color: var(--text);
+      display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer;
+    }
+    .app-squircle {
+      width: 54px; height: 54px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center; color: #fff;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4); position: relative;
+      transition: transform 0.15s;
+    }
+    .app-icon-btn:active .app-squircle { transform: scale(0.92); }
+    .app-label { font-size: 11px; color: #e2e8f0; font-weight: 500; }
+
+    .unread-badge {
+      position: absolute; top: -4px; right: -4px;
+      background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #090d16;
+    }
+
+    /* ================= 2. PHONE DIALER APP ================= */
+    .app-dialer {
+      background: #0b0e14;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .dialer-top-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: #0e131b;
+    }
+
+    .dialer-tab {
+      flex: 1; padding: 12px 0; text-align: center;
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer;
+    }
+    .dialer-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    .dialer-view {
+      flex: 1; overflow-y: auto; padding: 12px 16px;
+      display: flex; flex-direction: column;
+    }
+
+    .call-log-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 11px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer;
+    }
+    .call-log-item:hover { background: rgba(255, 255, 255, 0.03); border-radius: 8px; }
+
+    .avatar-circle {
+      width: 38px; height: 38px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0;
+    }
+
+    .dial-number-box {
+      padding: 8px 12px; display: flex; justify-content: space-between;
+      align-items: center; border-bottom: 1px solid var(--border);
+      margin-bottom: 10px; min-height: 48px;
+    }
+    .dial-digits {
+      font-size: 25px; font-weight: 500; letter-spacing: 1.5px;
+      color: #fff; font-family: var(--mono); overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .numpad-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 9px 14px; padding: 2px 10px;
+    }
+    .keypad-btn {
+      background: #141923; border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 24px; height: 52px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; color: #fff; cursor: pointer;
+    }
+    .keypad-btn:active { background: #263044; }
+    .keypad-num { font-size: 19px; font-weight: 500; line-height: 1; }
+    .keypad-sub { font-size: 8.5px; color: var(--muted); letter-spacing: 1.5px; margin-top: 2px; }
+
+    .call-fab-row { display: flex; justify-content: center; align-items: center; margin-top: 10px; }
+    .call-fab {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: #16a34a; border: none; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4); cursor: pointer;
+    }
+
+    /* USSD Dialog & Rogue STK Push Dialog */
+    .ussd-backdrop {
+      position: absolute; inset: 0; background: rgba(0, 0, 0, 0.76);
+      z-index: 47; display: flex; align-items: center; justify-content: center; padding: 18px;
+    }
+    .ussd-dialog {
+      background: #1e2430; border: 1px solid #334155; border-radius: 14px;
+      padding: 18px; width: 100%; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+      color: #f1f5f9; font-size: 13px;
+    }
+    .ussd-input {
+      width: 100%; background: transparent; border: none; border-bottom: 2px solid var(--blue);
+      color: #fff; padding: 6px 2px; font-size: 14px; margin: 12px 0 14px; outline: none;
+    }
+
+    /* ================= 3. REALISTIC GOOGLE MESSAGES APP ================= */
+    .app-messages { background: #0b0e14; display: flex; flex-direction: column; }
+    .msg-top-bar {
+      padding: 12px 16px; background: #111622; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .msg-thread-item {
+      display: flex; gap: 12px; padding: 13px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05); cursor: pointer;
+    }
+    .msg-thread-item:hover { background: rgba(255, 255, 255, 0.03); }
+
+    .chat-view { display: flex; flex-direction: column; height: 100%; background: #090c12; }
+    .chat-header {
+      padding: 10px 14px; background: #111622; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .chat-messages-area {
+      flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+    }
+    .chat-bubble-in {
+      align-self: flex-start; max-width: 85%; background: #1c2436; color: #f1f5f9;
+      padding: 10px 13px; border-radius: 16px 16px 16px 4px; font-size: 12.5px; line-height: 1.45;
+    }
+    .chat-bubble-out {
+      align-self: flex-end; max-width: 82%; background: #2563eb; color: #fff;
+      padding: 10px 13px; border-radius: 16px 16px 4px 16px; font-size: 12.5px; line-height: 1.45;
+    }
+    .chat-time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+    .chat-input-bar {
+      padding: 8px 12px; background: #111622; border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .chat-input-bar input {
+      flex: 1; background: #1c2436; border: 1px solid #2e3a52;
+      border-radius: 99px; padding: 8px 14px; color: #fff; font-size: 12px; outline: none;
+    }
+
+    /* ================= 4. M-PESA & 5. NGAO-SAUTI APPS ================= */
+    .app-mpesa { background: #07120c; padding: 16px; }
+    .mpesa-banner {
+      background: linear-gradient(135deg, #15803d, #166534);
+      border-radius: 14px; padding: 16px; color: #fff; margin-bottom: 14px;
+    }
+    .mpesa-form label { display: block; font-size: 11px; color: #86efac; margin-bottom: 4px; }
+    .mpesa-form input {
+      width: 100%; padding: 10px; background: #050b07; border: 1px solid #14532d;
+      border-radius: 8px; color: #fff; font-family: var(--mono); margin-bottom: 10px;
+    }
+
+    .app-ngao { background: #090d16; padding: 16px; overflow-y: auto; }
+
+    /* ================= 6. ACTIVE IN-CALL SCREEN (REALISTIC CALL UI) ================= */
+    .app-incall {
+      background: linear-gradient(180deg, #0d1526 0%, #060911 100%);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .incall-wave-box {
+      height: 52px; background: rgba(5, 8, 15, 0.85); border: 1px solid var(--border);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      gap: 4px; padding: 0 12px; margin: 10px 0;
+    }
+    .incall-bar { width: 4px; height: 8px; background: var(--cyan); border-radius: 2px; transition: height 0.1s; }
+    .incall-controls-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;
+    }
+    .incall-ctrl-btn {
+      background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 6px; color: #e2e8f0; font-size: 11px;
+      display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer;
+    }
+    .incall-ctrl-btn.toggled { background: rgba(59, 130, 246, 0.2); border-color: var(--blue); color: #93c5fd; }
+
+    /* INCOMING CALL & INTERCEPTION OVERLAYS */
+    .incoming-call-screen {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, #0f172a 0%, #05070b 100%);
+      z-index: 45; padding: 28px 20px;
+      display: flex; flex-direction: column; justify-content: space-between; text-align: center;
+    }
+    .pulse-avatar {
+      width: 78px; height: 78px; border-radius: 50%;
+      background: rgba(59, 130, 246, 0.15); border: 2px solid var(--blue);
+      margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; color: var(--blue);
+    }
+    .call-answer-row { display: flex; justify-content: space-around; align-items: center; margin-bottom: 16px; }
+    .round-call-btn {
+      width: 62px; height: 62px; border-radius: 50%; border: none; color: #fff;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+
+    .interception-modal {
+      position: absolute; inset: 0;
+      background: rgba(9, 11, 16, 0.96);
+      backdrop-filter: blur(12px);
+      z-index: 48; padding: 18px;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+
+    /* Bottom Android Navigation Bar */
+    .os-navbar {
+      height: 42px; background: #05070b; border-top: 1px solid #161e2e;
+      display: flex; justify-content: space-around; align-items: center; z-index: 50;
+    }
+    .nav-btn { background: none; border: none; color: var(--muted); padding: 8px 20px; cursor: pointer; }
+    .nav-btn:hover { color: #fff; }
+
+    /* ================= RIGHT COLUMN: COMMAND & CONSENSUS CENTER ================= */
+    .card {
+      background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px 20px; margin-bottom: 18px;
+    }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; flex-wrap: wrap; }
+    .card-title { font-size: 15px; font-weight: 600; }
+    .card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .btn {
+      background: var(--bg-panel-2); color: var(--text); border: 1px solid var(--border-light);
+      padding: 8px 13px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: 0.15s;
+    }
+    .btn:hover { background: #1f293d; }
+    .btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .btn-danger { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
+    .btn-amber { background: rgba(245, 158, 11, 0.14); border-color: rgba(245, 158, 11, 0.4); color: #fcd34d; }
+    .btn-success { background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; }
+
+    .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .vector-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+    @media (min-width: 640px) { .vector-grid { grid-template-columns: repeat(4, 1fr); } }
+    .vector-box { background: #090c14; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 12px; }
+    .vector-box.active { border-color: var(--red); background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
+
+    /* Acoustic Biometrics Bar */
+    .biometric-strip {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+      background: #090c14; border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 12px; margin-top: 10px; font-size: 11.5px; font-family: var(--mono);
+    }
+
+    .transcript-feed {
+      background: #07090e; border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px; height: 115px; overflow-y: auto; font-family: var(--mono);
+      font-size: 12px; margin-top: 10px; color: #cbd5e1;
+    }
+    .flag-hl { background: rgba(239, 68, 68, 0.22); color: #fca5a5; padding: 1px 5px; border-radius: 4px; border-bottom: 1px solid var(--red); }
+
+    .guardian-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: #090c14; border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;
+    }
+    .pill-tag {
+      font-size: 10px; font-family: var(--mono); padding: 2px 6px; border-radius: 4px;
+      background: var(--bg-panel-2); border: 1px solid var(--border-light); color: var(--muted); margin-left: 6px;
+    }
+
+    .kernel-log {
+      background: #07090e; border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px; height: 125px; overflow-y: auto; font-family: var(--mono);
+      font-size: 11.5px; color: #94a3b8;
+    }
+    .log-entry { margin-bottom: 5px; }
+    .log-entry.crit { color: #fca5a5; }
+    .log-entry.ok { color: #6ee7b7; }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HEADER -->
+  <header class="top-nav">
+    <div class="brand-group">
+      <div class="brand-logo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">NGAO-SAUTI OS</div>
+        <div class="brand-sub">Android Call Firewall, Rogue STK Push Guard &amp; Family Consensus Simulator</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <span id="global-status-badge" class="badge badge-safe">
+        <span style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span>
+        SHIELD ARMED • 5% RISK
+      </span>
+      <button class="btn" onclick="exportForensicPacket()">Export *333# Fraud Report</button>
+      <button class="btn" onclick="resetSystem()">Reset Phone</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+
+    <!-- ================= LEFT: REALISTIC ANDROID HARDWARE & OS ================= -->
+    <section class="phone-wrapper">
+      <div class="hw-btn-vol-up"></div>
+      <div class="hw-btn-vol-dn"></div>
+      <div class="hw-btn-power"></div>
+
+      <div id="phone-chassis" class="phone-chassis">
+
+        <!-- Android Status Bar -->
+        <div class="os-statusbar">
+          <span id="status-clock">13:40</span>
+          <div class="os-punchhole"></div>
+          <div class="status-icons">
+            <span style="font-size:10px;letter-spacing:0.5px;">Safaricom 5G</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="2" y="16" width="3" height="6"/><rect x="7" y="12" width="3" height="10"/>
+              <rect x="12" y="8" width="3" height="14"/><rect x="17" y="4" width="3" height="18"/>
+            </svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="16" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Floating Active Call Pill (Tap to return to full In-Call Screen) -->
+        <div id="ngao-floating-hud" class="ngao-floating-hud hidden" onclick="openApp('incall')">
+          <div class="hud-top">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2.2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span id="hud-caller-label">Tap to return to call • 00:00</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div id="hud-wave" class="hud-wave"></div>
+              <span id="hud-risk-pill" style="font-family:var(--mono);color:var(--green);">5%</span>
+            </div>
+          </div>
+          <div id="hud-live-caption" class="hud-caption">Monitoring live call audio...</div>
+        </div>
+
+        <!-- OS VIEWPORT -->
+        <div class="os-viewport">
+
+          <!-- ================= 1. ANDROID HOME SCREEN ================= -->
+          <div id="app-home" class="os-app app-home">
+            <div>
+              <div class="home-clock-widget">
+                <div class="home-time">13:40</div>
+                <div class="home-date">Saturday, Oct 24 • Nairobi, KE</div>
+              </div>
+
+              <!-- Ngao-Sauti Live Protection Widget -->
+              <div class="home-shield-widget" style="margin-top:18px;" onclick="openApp('ngao')">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                  <span style="font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:0.04em;">NGAO-SAUTI SHIELD</span>
+                  <span id="widget-state-text" style="font-size:11px;font-family:var(--mono);color:var(--green);">SAFE • 5% RISK</span>
+                </div>
+                <p style="font-size:11.5px;color:#cbd5e1;line-height:1.4;">
+                  Call Firewall, USSD (*100#) Filter &amp; Rogue STK Push Guard active.
+                </p>
+              </div>
+
+              <!-- Silent Family Safety Heartbeat Widget -->
+              <div class="home-telemetry-card" onclick="runSilentFamilyPing()">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-size:11px;font-weight:700;color:var(--green);">FAMILY SAFETY TELEMETRY</span>
+                  <span style="font-size:10px;font-family:var(--mono);color:#86efac;">Tap to Ping</span>
+                </div>
+                <div id="home-telemetry-text" style="font-size:11.5px;color:#cbd5e1;margin-top:3px;">
+                  Owen Mwangi: At Moringa School Wi-Fi • Phone on Silent (Safe)
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="home-search-pill" style="margin-bottom:16px;" onclick="openApp('messages')">
+                <span>Search apps or check SMS...</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </div>
+
+              <div class="app-grid">
+                <button class="app-icon-btn" onclick="openApp('dialer')">
+                  <div class="app-squircle" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.58 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                  </div>
+                  <span class="app-label">Phone</span>
+                </button>
+
+                <button class="app-icon-btn" onclick="openApp('messages')">
+                  <div class="app-squircle" style="background:linear-gradient(135deg,#0284c7,#0369a1);">
+                    <span class="unread-badge">2</span>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </div>
+                  <span class="app-label">Messages</span>
+                </button>
+
+                <button class="app-icon-btn" onclick="openApp('mpesa')">
+                  <div class="app-squircle" style="background:linear-gradient(135deg,#16a34a,#15803d);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+                    </svg>
+                  </div>
+                  <span class="app-label">M-Pesa</span>
+                </button>
+
+                <button class="app-icon-btn" onclick="openApp('ngao')">
+                  <div class="app-squircle" style="background:linear-gradient(135deg,#0891b2,#0e7490);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                  </div>
+                  <span class="app-label">Ngao-Sauti</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= 2. PHONE & USSD DIALER APP ================= -->
+          <div id="app-dialer" class="os-app app-dialer hidden">
+            <div class="dialer-top-tabs">
+              <button id="dtab-keypad" class="dialer-tab active" onclick="switchDialerTab('keypad')">Keypad</button>
+              <button id="dtab-recents" class="dialer-tab" onclick="switchDialerTab('recents')">Recents</button>
+              <button id="dtab-contacts" class="dialer-tab" onclick="switchDialerTab('contacts')">Contacts</button>
+            </div>
+
+            <!-- KEYPAD -->
+            <div id="dview-keypad" class="dialer-view" style="justify-content:space-between;">
+              <div>
+                <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:4px;">
+                  Dial <strong>*100#</strong> or <strong>*334#</strong> (Opens USSD when safe, blocked during scam)
+                </div>
+                <div class="dial-number-box">
+                  <div id="dial-input" class="dial-digits">*100#</div>
+                  <button onclick="backspaceDial()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="numpad-grid">
+                  <button class="keypad-btn" onclick="pressKey('1')"><span class="keypad-num">1</span><span class="keypad-sub">OO</span></button>
+                  <button class="keypad-btn" onclick="pressKey('2')"><span class="keypad-num">2</span><span class="keypad-sub">ABC</span></button>
+                  <button class="keypad-btn" onclick="pressKey('3')"><span class="keypad-num">3</span><span class="keypad-sub">DEF</span></button>
+                  <button class="keypad-btn" onclick="pressKey('4')"><span class="keypad-num">4</span><span class="keypad-sub">GHI</span></button>
+                  <button class="keypad-btn" onclick="pressKey('5')"><span class="keypad-num">5</span><span class="keypad-sub">JKL</span></button>
+                  <button class="keypad-btn" onclick="pressKey('6')"><span class="keypad-num">6</span><span class="keypad-sub">MNO</span></button>
+                  <button class="keypad-btn" onclick="pressKey('7')"><span class="keypad-num">7</span><span class="keypad-sub">PQRS</span></button>
+                  <button class="keypad-btn" onclick="pressKey('8')"><span class="keypad-num">8</span><span class="keypad-sub">TUV</span></button>
+                  <button class="keypad-btn" onclick="pressKey('9')"><span class="keypad-num">9</span><span class="keypad-sub">WXYZ</span></button>
+                  <button class="keypad-btn" onclick="pressKey('*')"><span class="keypad-num">*</span></button>
+                  <button class="keypad-btn" onclick="pressKey('0')"><span class="keypad-num">0</span><span class="keypad-sub">+</span></button>
+                  <button class="keypad-btn" onclick="pressKey('#')"><span class="keypad-num">#</span></button>
+                </div>
+              </div>
+
+              <div class="call-fab-row">
+                <button class="call-fab" onclick="executeDialerCall()">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.58 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- RECENTS -->
+            <div id="dview-recents" class="dialer-view hidden">
+              <div class="call-log-item" onclick="dialFamilyContact('Owen Mwangi (Son)')">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div class="avatar-circle" style="background:#2563eb;">O</div>
+                  <div>
+                    <div style="font-size:13.5px;font-weight:600;">Owen Mwangi (Son)</div>
+                    <div style="font-size:11px;color:var(--green);">Outgoing • Today, 11:20 AM</div>
+                  </div>
+                </div>
+                <span style="font-size:11px;color:var(--muted);">Call</span>
+              </div>
+
+              <div class="call-log-item">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div class="avatar-circle" style="background:#dc2626;">!</div>
+                  <div>
+                    <div style="font-size:13.5px;font-weight:600;color:#fca5a5;">+254 719 882 341</div>
+                    <div style="font-size:11px;color:var(--amber);">Flagged Scam • 10:52 AM</div>
+                  </div>
+                </div>
+                <span style="font-size:11px;color:var(--muted);">Blocked</span>
+              </div>
+            </div>
+
+            <!-- CONTACTS -->
+            <div id="dview-contacts" class="dialer-view hidden">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">VERIFIED FAMILY GUARDIANS (NEVER BLOCKED):</div>
+              <div class="call-log-item" onclick="dialFamilyContact('Owen Mwangi (Son)')">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div class="avatar-circle" style="background:#2563eb;">O</div>
+                  <div>
+                    <div style="font-size:13.5px;font-weight:600;">Owen Mwangi (Son)</div>
+                    <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">0711 223 344</div>
+                  </div>
+                </div>
+                <button class="btn btn-success" style="padding:5px 10px;">Dial</button>
+              </div>
+              <div class="call-log-item" onclick="dialFamilyContact('Muhammed Hassan')">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div class="avatar-circle" style="background:#0891b2;">M</div>
+                  <div>
+                    <div style="font-size:13.5px;font-weight:600;">Muhammed Hassan</div>
+                    <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">0722 556 677</div>
+                  </div>
+                </div>
+                <button class="btn btn-success" style="padding:5px 10px;">Dial</button>
+              </div>
+              <div class="call-log-item" onclick="dialFamilyContact('Collins Mundia')">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div class="avatar-circle" style="background:#7c3aed;">C</div>
+                  <div>
+                    <div style="font-size:13.5px;font-weight:600;">Collins Mundia</div>
+                    <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">0733 889 900</div>
+                  </div>
+                </div>
+                <button class="btn btn-success" style="padding:5px 10px;">Dial</button>
+              </div>
+            </div>
+
+            <!-- SAFARICOM USSD DIALOG -->
+            <div id="ussd-modal" class="ussd-backdrop hidden">
+              <div class="ussd-dialog">
+                <div id="ussd-title" style="font-weight:700;color:var(--cyan);margin-bottom:8px;">Safaricom USSD (*100#)</div>
+                <div id="ussd-menu-body" style="line-height:1.6;color:#e2e8f0;font-size:12.5px;"></div>
+                <input type="text" id="ussd-reply-input" class="ussd-input" placeholder="Enter option (1-5)" />
+                <div style="display:flex;justify-content:flex-end;gap:14px;font-weight:600;font-size:12.5px;">
+                  <button onclick="closeUssdModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;">CANCEL</button>
+                  <button onclick="sendUssdOption()" style="background:none;border:none;color:var(--blue);cursor:pointer;">SEND</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= 3. GOOGLE MESSAGES APP ================= -->
+          <div id="app-messages" class="os-app app-messages hidden">
+            <div id="msg-inbox-view" style="display:flex;flex-direction:column;height:100%;">
+              <div class="msg-top-bar">
+                <h3 style="font-size:16px;font-weight:600;">Messages</h3>
+                <span style="font-size:11px;color:var(--cyan);font-family:var(--mono);">SMS Spoof Guard ON</span>
+              </div>
+
+              <div style="flex:1;overflow-y:auto;">
+                <div class="msg-thread-item" onclick="openChatThread('scammer')">
+                  <div class="avatar-circle" style="background:#d97706;">!</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <span style="font-size:13.5px;font-weight:700;color:#fff;">+254 719 882 341</span>
+                      <span style="font-size:11px;color:var(--amber);font-weight:600;">10:51 AM</span>
+                    </div>
+                    <p style="font-size:12px;color:#e2e8f0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">
+                      UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU...
+                    </p>
+                    <span style="display:inline-block;margin-top:4px;font-size:10px;background:rgba(245,158,11,0.15);color:var(--amber);padding:2px 6px;border-radius:4px;">
+                      Suspicious Unverified Sender
+                    </span>
+                  </div>
+                </div>
+
+                <div class="msg-thread-item" onclick="openChatThread('mpesa')">
+                  <div class="avatar-circle" style="background:#16a34a;">M</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <span style="font-size:13.5px;font-weight:600;color:#4ade80;">MPESA ✓</span>
+                      <span style="font-size:11px;color:var(--muted);">Yesterday</span>
+                    </div>
+                    <p style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">
+                      UAY12P4L9M Confirmed. Ksh1,200.00 sent to KPLC PREPAID...
+                    </p>
+                  </div>
+                </div>
+
+                <div class="msg-thread-item" onclick="openChatThread('owen')">
+                  <div class="avatar-circle" style="background:#2563eb;">O</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <span style="font-size:13.5px;font-weight:600;">Owen Mwangi (Son)</span>
+                      <span style="font-size:11px;color:var(--muted);">09:15 AM</span>
+                    </div>
+                    <p style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">
+                      Mum, I'm in class at Moringa School right now, phone is on silent.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="msg-chat-view" class="chat-view hidden">
+              <div class="chat-header">
+                <button onclick="closeChatThread()" style="background:none;border:none;color:#fff;cursor:pointer;padding:4px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                </button>
+                <div id="chat-header-avatar" class="avatar-circle" style="width:32px;height:32px;font-size:12px;background:#2563eb;">O</div>
+                <div style="flex:1;">
+                  <div id="chat-header-title" style="font-size:13.5px;font-weight:600;">Contact</div>
+                  <div id="chat-header-sub" style="font-size:10.5px;color:var(--muted);font-family:var(--mono);">SMS</div>
+                </div>
+              </div>
+              <div id="chat-bubbles-container" class="chat-messages-area"></div>
+              <div class="chat-input-bar">
+                <input type="text" id="chat-reply-input" placeholder="Text message" />
+                <button onclick="sendChatMessage()" class="btn btn-primary" style="border-radius:99px;padding:7px 12px;">Send</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= 4. M-PESA SUPER APP ================= -->
+          <div id="app-mpesa" class="os-app app-mpesa hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid #14532d;margin-bottom:12px;">
+              <h3 style="font-size:15px;color:#4ade80;">M-PESA Super App</h3>
+              <span style="font-size:11px;color:#86efac;">Safaricom</span>
+            </div>
+            <div class="mpesa-banner">
+              <div style="font-size:11px;opacity:0.85;">AVAILABLE BALANCE</div>
+              <div style="font-size:24px;font-weight:700;font-family:var(--mono);margin-top:2px;">Ksh 48,200.00</div>
+            </div>
+            <div class="mpesa-form">
+              <label>RECIPIENT PHONE NUMBER</label>
+              <input type="text" id="mpesa-phone" value="0724889102" />
+              <label>AMOUNT (KSH)</label>
+              <input type="number" id="mpesa-amt" value="15000" />
+              <label>M-PESA PIN</label>
+              <input type="password" id="mpesa-pin" maxlength="4" value="1234" />
+              <button class="btn" style="width:100%;justify-content:center;background:#16a34a;border-color:#22c55e;color:#fff;padding:12px;margin-top:6px;" onclick="attemptMpesaTransfer()">
+                Send Money
+              </button>
+            </div>
+          </div>
+
+          <!-- ================= 5. NGAO-SAUTI SHIELD APP (WITH SILENT FAMILY TELEMETRY) ================= -->
+          <div id="app-ngao" class="os-app app-ngao hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:12px;">
+              <h3 style="font-size:15px;color:var(--cyan);">Ngao-Sauti Shield</h3>
+              <span id="ngao-app-badge" style="font-size:11px;font-family:var(--mono);color:var(--green);">ARMED</span>
+            </div>
+
+            <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;">
+              <div style="font-size:10.5px;color:var(--muted);">REAL-TIME MANIPULATION RISK</div>
+              <div id="ngao-app-score" style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--green);margin:2px 0;">5% (SAFE)</div>
+              <div style="font-size:11px;color:var(--muted);">
+                Freezes M-Pesa, *100#, and Rogue STK Pushes at 75% scam risk.
+              </div>
+            </div>
+
+            <!-- NEW FEATURE: SILENT FAMILY TELEMETRY VERIFIER -->
+            <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <span style="font-size:12px;font-weight:600;color:var(--green);">Silent Family Safety Telemetry</span>
+                <button class="btn btn-success" style="padding:3px 8px;font-size:10.5px;" onclick="runSilentFamilyPing()">Ping Now</button>
+              </div>
+              <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">
+                Verifies if your child/relative is actually safe when scammers claim they are in a hospital emergency while their phone is on silent:
+              </p>
+              <div id="telemetry-result-box" style="background:#070a10;border:1px solid #1e293b;border-radius:8px;padding:8px;font-family:var(--mono);font-size:10.5px;color:#86efac;">
+                • Owen Mwangi: Connected to Moringa_Campus_WiFi (Ngong Rd)<br/>
+                • Ringer Mode: Silent (In Class) • Battery: 84%<br/>
+                • Status: NO HOSPITAL EMERGENCY DETECTED
+              </div>
+            </div>
+
+            <!-- Calm-Voice Safe-Phrase Override -->
+            <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:12px;padding:12px;">
+              <div style="font-size:12px;font-weight:600;margin-bottom:4px;">Emergency Self-Override</div>
+              <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">
+                If all 5 guardians are offline and you are not on an active scam call, verify calm voice cadence to unlock:
+              </p>
+              <button class="btn" style="width:100%;justify-content:center;" onclick="attemptCalmVoiceOverride()">
+                Verify Calm Voice &amp; Unlock M-Pesa
+              </button>
+            </div>
+          </div>
+
+          <!-- ================= 6. ACTIVE IN-CALL SCREEN (NEW!) ================= -->
+          <div id="app-incall" class="os-app app-incall hidden">
+            <div style="text-align:center;margin-top:8px;">
+              <span style="font-size:10.5px;font-family:var(--mono);color:var(--cyan);background:rgba(6,182,212,0.12);padding:3px 9px;border-radius:99px;border:1px solid rgba(6,182,212,0.3);">
+                NGAO-SAUTI LIVE CALL AUDITOR
+              </span>
+              <h3 id="incall-name" style="font-size:20px;margin-top:10px;">Unknown Caller</h3>
+              <p id="incall-num-timer" style="font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-top:2px;">+254 724 889 102 • 00:00</p>
+            </div>
+
+            <div>
+              <div id="incall-wave" class="incall-wave-box"></div>
+              <div style="background:#070a10;border:1px solid var(--border);border-radius:10px;padding:10px;height:130px;overflow-y:auto;font-family:var(--mono);font-size:11.5px;" id="incall-transcript">
+                <span style="color:var(--muted);">Listening to live call stream...</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="incall-controls-grid">
+                <button id="btn-mute" class="incall-ctrl-btn" onclick="this.classList.toggle('toggled')">
+                  <span>Mute Mic</span>
+                </button>
+                <button id="btn-spk" class="incall-ctrl-btn toggled" onclick="this.classList.toggle('toggled')">
+                  <span>Speaker ON</span>
+                </button>
+                <button class="incall-ctrl-btn" onclick="runSilentFamilyPing()">
+                  <span style="color:var(--green);">Ping Child GPS</span>
+                </button>
+                <button class="incall-ctrl-btn" onclick="openApp('mpesa')">
+                  <span>Open M-Pesa</span>
+                </button>
+                <button class="incall-ctrl-btn" onclick="openApp('dialer')">
+                  <span>Dial *100#</span>
+                </button>
+                <button class="incall-ctrl-btn" onclick="openApp('home')">
+                  <span>Minimize Call</span>
+                </button>
+              </div>
+
+              <button class="btn btn-danger" style="width:100%;justify-content:center;padding:12px;background:var(--red);color:#fff;" onclick="endActiveCall()">
+                End Active Call
+              </button>
+            </div>
+          </div>
+
+          <!-- OVERLAY A: INCOMING CALL SCREEN -->
+          <div id="incoming-call-screen" class="incoming-call-screen hidden">
+            <div style="margin-top:20px;">
+              <div class="pulse-avatar">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/>
+                </svg>
+              </div>
+              <span style="font-size:11px;font-family:var(--mono);color:var(--amber);background:rgba(245,158,11,0.12);padding:4px 10px;border-radius:99px;border:1px solid rgba(245,158,11,0.3);">
+                UNVERIFIED NUMBER • NGAO-SAUTI READY
+              </span>
+              <h2 id="incoming-caller-title" style="font-size:22px;margin-top:14px;">Unknown Caller</h2>
+              <p id="incoming-caller-num" style="font-family:var(--mono);font-size:14px;color:var(--muted);margin-top:4px;">+254 724 889 102</p>
+            </div>
+
+            <div style="background:rgba(15,23,42,0.85);border:1px solid var(--border);border-radius:12px;padding:12px;font-size:12px;color:var(--muted);">
+              Answer the call to enter the <strong style="color:var(--text);">Live Call Monitor</strong> and watch Ngao-Sauti intercept manipulation in real time.
+            </div>
+
+            <div class="call-answer-row">
+              <div>
+                <button class="round-call-btn" style="background:var(--red);" onclick="declineIncomingCall()">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+                <div style="font-size:11px;color:var(--muted);margin-top:6px;">Decline</div>
+              </div>
+              <div>
+                <button class="round-call-btn" style="background:var(--green);" onclick="acceptIncomingCall()">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/>
+                  </svg>
+                </button>
+                <div style="font-size:11px;color:var(--green);font-weight:600;margin-top:6px;">Answer Call</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- OVERLAY B: ROGUE M-PESA STK PUSH INTERCEPTOR (NEW!) -->
+          <div id="rogue-stk-modal" class="ussd-backdrop hidden">
+            <div class="ussd-dialog" style="border:2px solid var(--red);background:#140c10;">
+              <div style="background:rgba(239,68,68,0.2);border:1px solid var(--red);border-radius:8px;padding:8px;margin-bottom:10px;">
+                <div style="font-size:11px;font-weight:700;color:#fca5a5;">NGAO-SAUTI STK PUSH FIREWALL</div>
+                <div style="font-size:11px;color:#fecdd3;margin-top:2px;">
+                  WARNING: Entering your PIN here <strong>DEDUCTS Ksh 15,000</strong>! It does NOT receive or reverse money.
+                </div>
+              </div>
+
+              <div style="font-size:12px;color:#cbd5e1;line-height:1.5;background:#1e2430;padding:10px;border-radius:8px;">
+                <strong>SIM Toolkit Prompt:</strong><br/>
+                Do you want to pay <strong>Ksh 15,000.00</strong> to <strong>FAST-CASH MERCHANTS (Till 882910)</strong>?<br/>
+                Enter M-PESA PIN:
+              </div>
+
+              <input type="password" class="ussd-input" value="****" disabled style="border-bottom-color:var(--red);color:#fca5a5;" />
+
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-danger" style="flex:1;justify-content:center;" onclick="killRogueStkPush()">
+                  Kill Fraudulent STK Prompt
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- OVERLAY C: NGAO-SAUTI SELECTIVE LOCK SHIELD -->
+          <div id="interception-modal" class="interception-modal hidden">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span class="badge badge-danger">NGAO-SAUTI INTERCEPTION</span>
+                <span id="intercept-score-badge" style="font-family:var(--mono);font-size:12px;color:var(--red);font-weight:700;">92% RISK</span>
+              </div>
+
+              <h3 id="intercept-title" style="font-size:16.5px;margin-top:12px;line-height:1.3;">
+                Scam Manipulation Detected — M-Pesa &amp; SIM-Swap Frozen
+              </h3>
+              <p id="intercept-desc" style="font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.45;">
+                High-pressure social engineering was detected. M-Pesa transfers and USSD (*100#) are paused pending 2-of-5 Family Guardian consensus.
+              </p>
+            </div>
+
+            <!-- Live Silent Telemetry Proof inside Lock Screen -->
+            <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:11px;">
+              <div style="font-size:11.5px;font-weight:700;color:var(--green);margin-bottom:4px;">
+                SILENT CHILD TELEMETRY CHECK (AUTO-VERIFIED):
+              </div>
+              <div style="font-family:var(--mono);font-size:10.5px;color:#cbd5e1;margin-bottom:8px;line-height:1.4;">
+                Owen Mwangi's phone is currently active on <strong>Moringa School Wi-Fi</strong> ( Silent Mode ). He is NOT in a hospital emergency.
+              </div>
+              <button class="btn btn-success" style="width:100%;justify-content:center;" onclick="dialFamilyContact('Owen Mwangi (Son)')">
+                Call Owen Mwangi Directly (Dialer Unlocked)
+              </button>
+            </div>
+
+            <div>
+              <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:8px;">
+                <span>Cooldown: <strong id="phone-cooldown" style="color:var(--text);">15:00</strong></span>
+                <span>Guardian Votes: <strong id="phone-votes" style="color:var(--cyan);">0 / 2</strong></span>
+              </div>
+              <button class="btn" style="width:100%;justify-content:center;" onclick="dismissInterceptionModal()">
+                Minimize Overlay &amp; Use Phone
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bottom Android Navigation Bar -->
+        <div class="os-navbar">
+          <button class="nav-btn" title="Back" onclick="navigateBack()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <button class="nav-btn" title="Home Screen" onclick="openApp('home')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="7"/>
+            </svg>
+          </button>
+          <button class="nav-btn" title="Ngao-Sauti Shield" onclick="openApp('ngao')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="5" y="5" width="14" height="14" rx="2"/>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= RIGHT: COMMAND & CONSENSUS TELEMETRY CENTER ================= -->
+    <section>
+
+      <!-- CARD 1: SCAM CALL, ROGUE STK PUSH & LIVE MIC INJECTOR -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">1. Threat Injector &amp; Real-Time Acoustic Classifier</div>
+            <div class="card-sub">
+              Ring the phone with a scam call, inject a fraudulent M-Pesa STK Push prompt, or speak live into your laptop microphone.
+            </div>
+          </div>
+        </div>
+
+        <div class="scenario-grid">
+          <button class="btn btn-danger" onclick="triggerIncomingCall('hospital')">
+            1. Ring: "Mtoto Hospitali" Scam
+          </button>
+          <button class="btn btn-danger" onclick="triggerIncomingCall('safaricom')">
+            2. Ring: Safaricom SIM-Swap Trap
+          </button>
+          <button class="btn btn-amber" onclick="injectRogueStkPush()">
+            3. Inject Rogue STK Push Trap
+          </button>
+          <button id="mic-btn" class="btn btn-primary" onclick="toggleLiveMic()">
+            4. Live Laptop Microphone
+          </button>
+        </div>
+
+        <div class="vector-grid">
+          <div id="vec-urgency" class="vector-box">
+            <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">VECTOR 01</div>
+            <div style="font-weight:600;margin-top:2px;">Cognitive Panic / Urgency</div>
+          </div>
+          <div id="vec-authority" class="vector-box">
+            <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">VECTOR 02</div>
+            <div style="font-weight:600;margin-top:2px;">Telco / Authority Spoof</div>
+          </div>
+          <div id="vec-money" class="vector-box">
+            <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">VECTOR 03</div>
+            <div style="font-weight:600;margin-top:2px;">Coercive Money Demand</div>
+          </div>
+          <div id="vec-pin" class="vector-box">
+            <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">VECTOR 04</div>
+            <div style="font-weight:600;margin-top:2px;">PIN / OTP / STK Harvest</div>
+          </div>
+        </div>
+
+        <!-- Acoustic Biometrics & Deepfake Telemetry Strip -->
+        <div class="biometric-strip">
+          <span>VOICE BIOMETRICS: <strong id="bio-voice-state" style="color:var(--green);">NATURAL CADENCE</strong></span>
+          <span>COERCION STRESS JITTER: <strong id="bio-jitter-val" style="color:var(--cyan);">12 Hz (Low)</strong></span>
+          <span>CHILD TELEMETRY: <strong style="color:var(--green);">AT MORINGA SCHOOL (SAFE)</strong></span>
+        </div>
+
+        <div id="transcript-feed" class="transcript-feed">
+          <span style="color:var(--muted);">[System Safe (5% Risk). Try dialing *100# in the Phone app, opening Messages, or clicking a Threat Injector button above...]</span>
+        </div>
+      </div>
+
+      <!-- CARD 2: 2-OF-5 GUARDIAN CONSENSUS ENGINE -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">2. Rolling Family Guardian Consensus (2 of 5 Required)</div>
+            <div class="card-sub">
+              When M-Pesa is frozen, 2 guardians must vote to unlock or blacklist. Includes 90s timeout escalation to SMS backups.
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn" onclick="simulateTimeoutEscalation()">Simulate 90s Primary Timeout</button>
+          </div>
+        </div>
+
+        <div id="guardians-container"></div>
+      </div>
+
+      <!-- CARD 3: SYSTEM KERNEL & BLACKLIST LOG -->
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-header" style="margin-bottom:10px;">
+          <div class="card-title">3. Interception Kernel &amp; Community Threat Ledger</div>
+          <span style="font-size:11px;font-family:var(--mono);color:var(--muted);">
+            Team: Owen Mwangi • Muhammed Hassan • Collins Mundia
+          </span>
+        </div>
+        <div id="kernel-log" class="kernel-log">
+          <div class="log-entry">[SYSTEM] Ngao-Sauti OS booted. USSD (*100#), STK Push Guard &amp; M-Pesa currently UNLOCKED.</div>
+          <div class="log-entry">[TELEMETRY] Linked family device heartbeat: Owen Mwangi (Moringa School Wi-Fi — Safe).</div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    // ================= STATE =================
+    let currentApp = 'home';
+    let appHistory = ['home'];
+    let riskScore = 5;
+    let isCircuitLocked = false;
+    let pendingScenario = null;
+    let callActive = false;
+    let callSec = 0;
+    let callInterval = null;
+    let ringInterval = null;
+    let hudWaveInterval = null;
+    let cooldownSec = 900;
+    let cooldownInterval = null;
+    let recognition = null;
+    let micActive = false;
+    let activeChatThread = null;
+
+    const guardians = [
+      { id: 1, name: "Owen Mwangi", phone: "0711 223 344", role: "Primary", status: "Online", vote: null },
+      { id: 2, name: "Muhammed Hassan", phone: "0722 556 677", role: "Primary", status: "Online", vote: null },
+      { id: 3, name: "Collins Mundia", phone: "0733 889 900", role: "Primary", status: "Online", vote: null },
+      { id: 4, name: "Grace Wanjiku", phone: "0744 111 222", role: "Backup (SMS)", status: "Standby", vote: null },
+      { id: 5, name: "David Kiprop", phone: "0755 333 444", role: "Backup (SMS)", status: "Standby", vote: null }
+    ];
+
+    const chatThreads = {
+      scammer: {
+        title: "+254 719 882 341",
+        sub: "Unknown Sender • Not in Contacts",
+        color: "#d97706",
+        avatar: "!",
+        isSpoof: true,
+        messages: [
+          { dir: "in", text: "UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU 0719882341 on 24/10/26 at 10:50 AM. New M-PESA balance is Ksh63,200.00.", time: "10:50 AM" },
+          { dir: "in", text: "Pole sana nimetuma pesa kwa namba yako kimakosa, tafadhali nirudishie sasa hivi niko hospitali na mtoto!", time: "10:51 AM" }
+        ]
+      },
+      mpesa: {
+        title: "MPESA ✓",
+        sub: "Official Safaricom Alphanumeric ID",
+        color: "#16a34a",
+        avatar: "M",
+        isSpoof: false,
+        messages: [
+          { dir: "in", text: "UAY12P4L9M Confirmed. Ksh1,200.00 sent to KPLC PREPAID for account 14289910 on 23/10/26 at 8:14 PM. New M-PESA balance is Ksh48,200.00.", time: "Yesterday" }
+        ]
+      },
+      owen: {
+        title: "Owen Mwangi (Son)",
+        sub: "0711 223 344 • Family Guardian",
+        color: "#2563eb",
+        avatar: "O",
+        isSpoof: false,
+        messages: [
+          { dir: "out", text: "Owen umefika shule salama?", time: "09:10 AM" },
+          { dir: "in", text: "Ndio Mum, I'm in class at Moringa School right now, phone is on silent.", time: "09:15 AM" }
+        ]
+      }
+    };
+
+    const SCAM_RULES = [
+      { word: "hospitali", weight: 28, vec: "vec-urgency" },
+      { word: "ameumia", weight: 28, vec: "vec-urgency" },
+      { word: "ajali", weight: 28, vec: "vec-urgency" },
+      { word: "daktari", weight: 20, vec: "vec-authority" },
+      { word: "safaricom", weight: 25, vec: "vec-authority" },
+      { word: "customer care", weight: 25, vec: "vec-authority" },
+      { word: "sim swap", weight: 35, vec: "vec-pin" },
+      { word: "pin", weight: 35, vec: "vec-pin" },
+      { word: "otp", weight: 35, vec: "vec-pin" },
+      { word: "tuma", weight: 24, vec: "vec-money" },
+      { word: "elfu", weight: 22, vec: "vec-money" },
+      { word: "sasa hivi", weight: 20, vec: "vec-urgency" }
+    ];
+
+    // Build waveform bars for HUD and In-Call screen
+    const hudWave = document.getElementById('hud-wave');
+    for (let i = 0; i < 8; i++) {
+      const b = document.createElement('div');
+      b.className = 'hud-bar';
+      hudWave.appendChild(b);
+    }
+    const incallWave = document.getElementById('incall-wave');
+    for (let i = 0; i < 22; i++) {
+      const b = document.createElement('div');
+      b.className = 'incall-bar';
+      incallWave.appendChild(b);
+    }
+
+    // Audio Synthesizer
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq = 600, dur = 0.12, type = 'sine') {
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      } catch (e) {}
+    }
+
+    function speakWarning(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1.02;
+        window.speechSynthesis.speak(u);
+      }
+    }
+
+    // ================= MULTI-APP OS ROUTER =================
+    function openApp(appName) {
+      playTone(540, 0.04, 'triangle');
+
+      if (appName === 'mpesa' && isCircuitLocked) {
+        showInterceptionModal(
+          "M-Pesa App Blocked by Ngao-Sauti",
+          "You attempted to open M-Pesa during an unverified scam alert. Outgoing transfers require 2-of-5 Family Guardian approval."
+        );
+        logKernel("[ACCESSIBILITY SHIELD] Blocked launch of M-Pesa app during active lock.", "crit");
+        return;
+      }
+
+      document.querySelectorAll('.os-app').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById('app-' + appName);
+      if (target) {
+        target.classList.remove('hidden');
+        currentApp = appName;
+        appHistory.push(appName);
+      }
+    }
+
+    function navigateBack() {
+      if (!document.getElementById('interception-modal').classList.contains('hidden')) {
+        dismissInterceptionModal();
+        return;
+      }
+      if (!document.getElementById('rogue-stk-modal').classList.contains('hidden')) {
+        killRogueStkPush();
+        return;
+      }
+      if (!document.getElementById('ussd-modal').classList.contains('hidden')) {
+        closeUssdModal();
+        return;
+      }
+      if (currentApp === 'messages' && activeChatThread !== null) {
+        closeChatThread();
+        return;
+      }
+      if (appHistory.length > 1) {
+        appHistory.pop();
+        const prev = appHistory[appHistory.length - 1];
+        openApp(prev);
+      } else {
+        openApp('home');
+      }
+    }
+
+    // ================= PHONE DIALER & *100# USSD LOGIC =================
+    function switchDialerTab(tab) {
+      ['keypad', 'recents', 'contacts'].forEach(t => {
+        document.getElementById('dtab-' + t).classList.toggle('active', t === tab);
+        document.getElementById('dview-' + t).classList.toggle('hidden', t !== tab);
+      });
+    }
+
+    function pressKey(k) {
+      playTone(700, 0.04);
+      document.getElementById('dial-input').innerText += k;
+    }
+
+    function backspaceDial() {
+      const el = document.getElementById('dial-input');
+      el.innerText = el.innerText.slice(0, -1);
+    }
+
+    function executeDialerCall() {
+      const code = document.getElementById('dial-input').innerText.trim();
+      if (!code) return;
+
+      if (code.startsWith('*') && code.endsWith('#')) {
+        if (isCircuitLocked || (callActive && riskScore >= 40)) {
+          riskScore = Math.max(riskScore, 92);
+          document.getElementById('vec-pin').classList.add('active');
+          updateRiskTelemetry();
+          triggerCircuitInterference(
+            `USSD Code (${code}) Blocked During Threat`,
+            `Ngao-Sauti intercepted ${code} because a high-risk call or scam alert is active. SIM-swap and USSD money transfers are frozen.`
+          );
+          logKernel(`[USSD FIREWALL] Blocked execution of ${code} due to active threat state.`, "crit");
+          return;
+        }
+
+        playTone(620, 0.08);
+        document.getElementById('ussd-title').innerText = `Safaricom USSD (${code})`;
+        document.getElementById('ussd-menu-body').innerHTML =
+          code === '*334#'
+            ? `1. Send Money<br/>2. Withdraw Cash<br/>3. Lipa na M-PESA<br/>4. Loans &amp; Savings<br/>5. My Account`
+            : `1. My Account &amp; Airtime Balance<br/>2. Data, Voice &amp; SMS Deals<br/>3. M-PESA Services<br/>4. SIM Swap / PUK Request<br/>5. Customer Care`;
+        document.getElementById('ussd-reply-input').value = '';
+        document.getElementById('ussd-modal').classList.remove('hidden');
+        logKernel(`[USSD SESSION] Opened standard Safaricom USSD menu for ${code} (System is safe).`, "ok");
+        return;
+      }
+
+      dialFamilyContact(code);
+    }
+
+    function closeUssdModal() {
+      document.getElementById('ussd-modal').classList.add('hidden');
+    }
+
+    function sendUssdOption() {
+      const opt = document.getElementById('ussd-reply-input').value.trim();
+      const body = document.getElementById('ussd-menu-body');
+
+      if (opt === '1') {
+        body.innerHTML = `<strong>Safaricom Balance:</strong><br/>Airtime: Ksh 145.50<br/>Data Bundle: 2.4 GB (Expires 30/10/2026).`;
+      } else if (opt === '4' && callActive) {
+        closeUssdModal();
+        riskScore = 95;
+        document.getElementById('vec-pin').classList.add('active');
+        updateRiskTelemetry();
+        triggerCircuitInterference("SIM-Swap USSD Blocked!", "You attempted a SIM-Swap while on an active call.");
+        return;
+      } else {
+        body.innerHTML = `Request processed successfully. Thank you for using Safaricom.`;
+      }
+      document.getElementById('ussd-reply-input').value = '';
+    }
+
+    function dialFamilyContact(name) {
+      playTone(760, 0.1);
+      logKernel(`[SAFE DIALER] Outgoing verification call placed to ${name}. Normal calls are never blocked.`, "ok");
+      alert(`Calling ${name}...\n\nStandard voice calls always remain 100% unlocked so the user can verify with family.`);
+    }
+
+    // ================= NEW FEATURE: ROGUE STK PUSH INTERCEPTOR =================
+    function injectRogueStkPush() {
+      playTone(900, 0.18, 'sawtooth');
+      riskScore = Math.max(riskScore, 88);
+      document.getElementById('vec-pin').classList.add('active');
+      document.getElementById('vec-money').classList.add('active');
+      updateRiskTelemetry();
+      document.getElementById('rogue-stk-modal').classList.remove('hidden');
+      logKernel("[STK PUSH SHIELD] Intercepted remote M-Pesa STK Push from Till 882910 during call. PIN input disabled!", "crit");
+      speakWarning("Stop! Do not enter your M-Pesa PIN. This prompt will deduct fifteen thousand shillings from your account.");
+    }
+
+    function killRogueStkPush() {
+      document.getElementById('rogue-stk-modal').classList.add('hidden');
+      logKernel("[STK PUSH TERMINATED] Fraudulent STK Push prompt cancelled safely. Zero funds lost.", "ok");
+    }
+
+    // ================= NEW FEATURE: SILENT FAMILY TELEMETRY PING =================
+    function runSilentFamilyPing() {
+      playTone(780, 0.1);
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const msg = `• Owen Mwangi: Active on Moringa_Campus_WiFi (${now})<br/>• Ringer Mode: Silent (In Class) • Battery: 84%<br/>• Verdict: SAFE (Hospital claim is 100% FALSE)`;
+      document.getElementById('telemetry-result-box').innerHTML = msg;
+      document.getElementById('home-telemetry-text').innerText = `Verified ${now}: Owen is safe at Moringa School Wi-Fi!`;
+      logKernel("[FAMILY TELEMETRY] Silent device ping confirmed Owen Mwangi is at Moringa School (Safe).", "ok");
+      openApp('ngao');
+    }
+
+    function attemptCalmVoiceOverride() {
+      if (callActive) {
+        alert("Cannot self-override while an active scam call is still connected! Hang up first or wait for 2-of-5 Family Guardians.");
+        return;
+      }
+      resetSystem();
+      logKernel("[CALM-VOICE OVERRIDE] User passed calm vocal cadence check after ending call. M-Pesa unlocked.", "ok");
+      alert("Calm-Voice Override Verified: M-Pesa and USSD unlocked.");
+    }
+
+    // ================= MESSAGES APP LOGIC =================
+    function openChatThread(threadKey) {
+      activeChatThread = threadKey;
+      const t = chatThreads[threadKey];
+      if (!t) return;
+
+      document.getElementById('msg-inbox-view').classList.add('hidden');
+      document.getElementById('msg-chat-view').classList.remove('hidden');
+
+      const av = document.getElementById('chat-header-avatar');
+      av.style.background = t.color;
+      av.innerText = t.avatar;
+      document.getElementById('chat-header-title').innerText = t.title;
+      document.getElementById('chat-header-sub').innerText = t.sub;
+
+      renderChatBubbles();
+    }
+
+    function renderChatBubbles() {
+      const t = chatThreads[activeChatThread];
+      const box = document.getElementById('chat-bubbles-container');
+      box.innerHTML = '';
+
+      t.messages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = m.dir === 'in' ? 'chat-bubble-in' : 'chat-bubble-out';
+        div.innerHTML = `<div>${m.text}</div><div class="chat-time">${m.time}</div>`;
+        box.appendChild(div);
+      });
+
+      if (t.isSpoof) {
+        const warnCard = document.createElement('div');
+        warnCard.style.cssText = "background:rgba(239,68,68,0.12);border:1px solid var(--red);border-radius:12px;padding:10px;font-size:11.5px;margin-top:6px;";
+        warnCard.innerHTML = `
+          <div style="font-weight:700;color:#fca5a5;margin-bottom:4px;">NGAO-SAUTI SENDER SPOOF ALERT</div>
+          <div style="color:#cbd5e1;margin-bottom:8px;">
+            This "Confirmed" text was sent from a personal phone number (<strong>+254 719 882 341</strong>), NOT official <strong>MPESA</strong>!
+          </div>
+          <button class="btn btn-danger" style="width:100%;justify-content:center;" onclick="flagSpoofedSmsThread()">
+            Lock M-Pesa &amp; Flag Fake Reversal Scam
+          </button>
+        `;
+        box.appendChild(warnCard);
+      }
+
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function closeChatThread() {
+      activeChatThread = null;
+      document.getElementById('msg-chat-view').classList.add('hidden');
+      document.getElementById('msg-inbox-view').classList.remove('hidden');
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chat-reply-input');
+      const txt = input.value.trim();
+      if (!txt || !activeChatThread) return;
+      chatThreads[activeChatThread].messages.push({ dir: 'out', text: txt, time: 'Just now' });
+      input.value = '';
+      renderChatBubbles();
+    }
+
+    function flagSpoofedSmsThread() {
+      riskScore = 96;
+      document.getElementById('vec-money').classList.add('active');
+      document.getElementById('vec-authority').classList.add('active');
+      document.getElementById('transcript-feed').innerHTML = `
+        <div style="color:var(--red);font-weight:700;">[SMS SENDER SPOOF DETECTED]</div>
+        <div>Sender <span class="flag-hl">+254719882341</span> is a personal line impersonating official MPESA.</div>
+      `;
+      updateRiskTelemetry();
+      triggerCircuitInterference(
+        "Fake M-Pesa Reversal SMS Blocked",
+        "Sender +254719882341 is a personal number, NOT official MPESA. Outgoing M-Pesa transfers are locked so you do not send money to a scammer."
+      );
+      logKernel("[SMS FIREWALL] Blocked fake M-Pesa reversal scam from +254719882341.", "crit");
+    }
+
+    function attemptMpesaTransfer() {
+      const num = document.getElementById('mpesa-phone').value;
+      const amt = document.getElementById('mpesa-amt').value;
+
+      if (isCircuitLocked) {
+        showInterceptionModal(
+          "M-Pesa Transfer Paused",
+          `Transfer of Ksh ${Number(amt).toLocaleString()} to ${num} is blocked pending 2-of-5 Family Guardian consensus.`
+        );
+        return;
+      }
+      alert(`M-Pesa transfer of Ksh ${Number(amt).toLocaleString()} to ${num} succeeded (System is safe).`);
+    }
+
+    // ================= INCOMING SCAM CALL & ACTIVE IN-CALL SCREEN =================
+    function triggerIncomingCall(scenarioKey) {
+      resetSystem();
+      pendingScenario = scenarioKey;
+
+      const callerTitle = scenarioKey === 'hospital' ? 'Unknown Caller' : 'Customer Care Line';
+      const callerNum = scenarioKey === 'hospital' ? '+254 724 889 102' : '+254 710 442 991';
+
+      document.getElementById('incoming-caller-title').innerText = callerTitle;
+      document.getElementById('incoming-caller-num').innerText = callerNum;
+      document.getElementById('incall-name').innerText = callerTitle;
+      document.getElementById('incoming-call-screen').classList.remove('hidden');
+      document.getElementById('phone-chassis').classList.add('ringing-shake');
+
+      logKernel(`[INCOMING CALL] Ringing from ${callerNum} (${callerTitle}). Answer on the phone screen...`);
+
+      playTone(820, 0.18, 'square');
+      clearInterval(ringInterval);
+      ringInterval = setInterval(() => playTone(820, 0.18, 'square'), 1200);
+    }
+
+    function declineIncomingCall() {
+      clearInterval(ringInterval);
+      document.getElementById('phone-chassis').classList.remove('ringing-shake');
+      document.getElementById('incoming-call-screen').classList.add('hidden');
+      logKernel("[CALL DECLINED] User rejected incoming call.");
+    }
+
+    function acceptIncomingCall() {
+      clearInterval(ringInterval);
+      document.getElementById('phone-chassis').classList.remove('ringing-shake');
+      document.getElementById('incoming-call-screen').classList.add('hidden');
+
+      callActive = true;
+      openApp('incall');
+      document.getElementById('ngao-floating-hud').classList.remove('hidden');
+      document.getElementById('transcript-feed').innerHTML = '';
+      document.getElementById('incall-transcript').innerHTML = '';
+
+      const callerNum = pendingScenario === 'safaricom' ? '+254 710 442 991' : '+254 724 889 102';
+      callSec = 0;
+      clearInterval(callInterval);
+      callInterval = setInterval(() => {
+        callSec++;
+        const s = String(callSec % 60).padStart(2, '0');
+        document.getElementById('hud-caller-label').innerText = `Tap to return to call • 00:${s}`;
+        document.getElementById('incall-num-timer').innerText = `${callerNum} • 00:${s}`;
+      }, 1000);
+
+      setHudWave(true);
+      logKernel("[CALL CONNECTED] Active In-Call Monitor launched. Analyzing Swahili/English stream...");
+
+      const scripts = {
+        hospital: [
+          "Hello mzazi, niko hapa Kenyatta hospitali kwa emergency!",
+          "Mtoto wako amepata ajali mbaya sana na ameumia kichwa.",
+          "Daktari anasema tuma elfu kumi na tano sasa hivi kabla aingie theatre!"
+        ],
+        safaricom: [
+          "Jambo, nakupigia kutoka Safaricom Customer Care.",
+          "Kuna mwizi anajaribu kufanya SIM swap kwa line yako sasa hivi.",
+          "Tafadhali bonyeza PIN yako na usomee ile OTP imeingia!"
+        ]
+      };
+
+      const lines = scripts[pendingScenario] || scripts.hospital;
+      lines.forEach((line, index) => {
+        setTimeout(() => {
+          if (!callActive) return;
+          processSpeechSegment(line);
+          if (index === lines.length - 1) {
+            setTimeout(() => setHudWave(false), 1200);
+          }
+        }, (index + 1) * 1400);
+      });
+    }
+
+    function endActiveCall() {
+      callActive = false;
+      clearInterval(callInterval);
+      setHudWave(false);
+      document.getElementById('ngao-floating-hud').classList.add('hidden');
+      logKernel("[CALL ENDED] User terminated active phone call.");
+      openApp('home');
+    }
+
+    function setHudWave(active) {
+      clearInterval(hudWaveInterval);
+      const bars = document.querySelectorAll('.hud-bar, .incall-bar');
+      if (!active) {
+        bars.forEach(b => b.style.height = '4px');
+        return;
+      }
+      hudWaveInterval = setInterval(() => {
+        bars.forEach(b => {
+          const maxH = b.classList.contains('incall-bar') ? 38 : 13;
+          b.style.height = (Math.floor(Math.random() * maxH) + 4) + 'px';
+          b.style.background = isCircuitLocked ? 'var(--red)' : 'var(--cyan)';
+        });
+      }, 110);
+    }
+
+    function processSpeechSegment(line) {
+      let formatted = line;
+      const lower = line.toLowerCase();
+
+      SCAM_RULES.forEach(rule => {
+        if (lower.includes(rule.word)) {
+          riskScore = Math.min(riskScore + rule.weight, 98);
+          document.getElementById(rule.vec).classList.add('active');
+          const reg = new RegExp(`(${rule.word})`, 'gi');
+          formatted = formatted.replace(reg, `<span class="flag-hl">$1</span>`);
+        }
+      });
+
+      document.getElementById('hud-live-caption').innerText = `"${line}"`;
+      const feed = document.getElementById('transcript-feed');
+      const incallBox = document.getElementById('incall-transcript');
+
+      feed.innerHTML += `<div style="margin-bottom:6px;">&gt; ${formatted}</div>`;
+      feed.scrollTop = feed.scrollHeight;
+
+      incallBox.innerHTML += `<div style="margin-bottom:6px;">&gt; ${formatted}</div>`;
+      incallBox.scrollTop = incallBox.scrollHeight;
+
+      updateRiskTelemetry();
+    }
+
+    function updateRiskTelemetry() {
+      const globalBadge = document.getElementById('global-status-badge');
+      const hudRisk = document.getElementById('hud-risk-pill');
+      const ngaoScore = document.getElementById('ngao-app-score');
+      const bioVoice = document.getElementById('bio-voice-state');
+      const bioJitter = document.getElementById('bio-jitter-val');
+
+      hudRisk.innerText = `${riskScore}%`;
+      ngaoScore.innerText = `${riskScore}% (${riskScore >= 75 ? 'CRITICAL' : 'SAFE'})`;
+
+      if (riskScore >= 75) {
+        hudRisk.style.color = 'var(--red)';
+        ngaoScore.style.color = 'var(--red)';
+        bioVoice.innerText = 'COERCIVE PANIC / SYNTHETIC RISK';
+        bioVoice.style.color = 'var(--red)';
+        bioJitter.innerText = '89 Hz (High Anomaly)';
+        bioJitter.style.color = 'var(--red)';
+
+        document.getElementById('ngao-floating-hud').classList.add('hud-danger');
+        globalBadge.className = 'badge badge-danger';
+        globalBadge.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span> CIRCUIT LOCKED • ${riskScore}% SCAM RISK`;
+
+        if (!isCircuitLocked) {
+          triggerCircuitInterference(
+            "Scam Manipulation Detected — M-Pesa & USSD Frozen",
+            "Ngao-Sauti detected high-pressure social engineering on this call. Outgoing M-Pesa transfers and *100# are locked until 2 of 5 Family Guardians approve."
+          );
+        }
+      } else {
+        hudRisk.style.color = 'var(--green)';
+        ngaoScore.style.color = 'var(--green)';
+        bioVoice.innerText = 'NATURAL CADENCE';
+        bioVoice.style.color = 'var(--green)';
+        bioJitter.innerText = '12 Hz (Low)';
+        bioJitter.style.color = 'var(--cyan)';
+
+        globalBadge.className = 'badge badge-safe';
+        globalBadge.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span> SHIELD ARMED • ${riskScore}% RISK`;
+      }
+    }
+
+    function triggerCircuitInterference(title, desc) {
+      isCircuitLocked = true;
+      closeUssdModal();
+      playTone(920, 0.2, 'sawtooth');
+      setTimeout(() => playTone(640, 0.25, 'sawtooth'), 230);
+
+      document.getElementById('phone-chassis').classList.add('scam-lock-active');
+      document.getElementById('widget-state-text').innerText = 'M-PESA FROZEN';
+      document.getElementById('widget-state-text').style.color = 'var(--red)';
+      document.getElementById('ngao-app-badge').innerText = 'LOCKED';
+      document.getElementById('ngao-app-badge').style.color = 'var(--red)';
+
+      showInterceptionModal(title, desc);
+      startCooldownClock();
+      logKernel(`[CIRCUIT BREAKER] Scam risk ${riskScore}%. Froze M-Pesa & USSD (*100#). Auto-verified child telemetry (Owen is safe).`, "crit");
+      speakWarning("Warning! Ngao Sauti detected scam manipulation. Outgoing M-Pesa and SIM swap codes are paused.");
+    }
+
+    function showInterceptionModal(title, desc) {
+      document.getElementById('intercept-score-badge').innerText = `${riskScore}% RISK`;
+      document.getElementById('intercept-title').innerText = title;
+      document.getElementById('intercept-desc').innerText = desc;
+      document.getElementById('interception-modal').classList.remove('hidden');
+    }
+
+    function dismissInterceptionModal() {
+      document.getElementById('interception-modal').classList.add('hidden');
+    }
+
+    function startCooldownClock() {
+      clearInterval(cooldownInterval);
+      cooldownSec = 900;
+      cooldownInterval = setInterval(() => {
+        cooldownSec--;
+        const m = String(Math.floor(cooldownSec / 60)).padStart(2, '0');
+        const s = String(cooldownSec % 60).padStart(2, '0');
+        document.getElementById('phone-cooldown').innerText = `${m}:${s}`;
+      }, 1000);
+    }
+
+    // ================= LIVE LAPTOP MICROPHONE =================
+    function toggleLiveMic() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const btn = document.getElementById('mic-btn');
+      if (!SpeechRec) {
+        alert("Live microphone speech recognition requires Chrome or Edge.");
+        return;
+      }
+
+      if (micActive) {
+        recognition.stop();
+        micActive = false;
+        btn.innerText = "4. Live Laptop Microphone";
+        setHudWave(false);
+        return;
+      }
+
+      resetSystem();
+      callActive = true;
+      openApp('incall');
+      document.getElementById('ngao-floating-hud').classList.remove('hidden');
+      document.getElementById('hud-live-caption').innerText = 'Speak Swahili/English scam phrases into mic...';
+      document.getElementById('transcript-feed').innerHTML = '<div>[Listening to live mic... Say "Niko hospitali, mtoto ameumia, tuma elfu kumi, PIN yako..."]</div>';
+      document.getElementById('incall-transcript').innerHTML = '<div>[Speak into laptop mic...]</div>';
+
+      recognition = new SpeechRec();
+      recognition.continuous = true;
+      recognition.lang = 'en-KE';
+      recognition.onresult = (e) => {
+        const spoken = e.results[e.results.length - 1][0].transcript;
+        processSpeechSegment(spoken);
+      };
+      recognition.start();
+      micActive = true;
+      btn.innerText = "Stop Live Microphone";
+      setHudWave(true);
+    }
+
+    // ================= 2-OF-5 GUARDIAN CONSENSUS =================
+    function renderGuardians() {
+      const container = document.getElementById('guardians-container');
+      const totalVotes = guardians.filter(g => g.vote !== null).length;
+      document.getElementById('phone-votes').innerText = `${totalVotes} / 2`;
+
+      container.innerHTML = guardians.map(g => {
+        let rightSide = '';
+        if (g.status === 'Timed Out') {
+          rightSide = `<span style="font-size:11px;color:var(--amber);font-family:var(--mono);">90s Timeout (Escalated)</span>`;
+        } else if (g.vote === null) {
+          rightSide = `
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-danger" style="padding:5px 10px;" onclick="castVote(${g.id}, 'block')">Block Scam</button>
+              <button class="btn btn-success" style="padding:5px 10px;" onclick="castVote(${g.id}, 'approve')">Approve</button>
+            </div>
+          `;
+        } else if (g.vote === 'block') {
+          rightSide = `<span style="font-size:11px;font-family:var(--mono);color:var(--red);font-weight:700;">VOTED BLOCK</span>`;
+        } else {
+          rightSide = `<span style="font-size:11px;font-family:var(--mono);color:var(--green);font-weight:700;">VOTED SAFE</span>`;
+        }
+
+        return `
+          <div class="guardian-row">
+            <div>
+              <div style="font-size:13px;font-weight:600;">
+                ${g.name}
+                <span class="pill-tag">${g.role}</span>
+                <span class="pill-tag">${g.status}</span>
+              </div>
+              <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px;">${g.phone}</div>
+            </div>
+            ${rightSide}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function castVote(id, decision) {
+      const g = guardians.find(x => x.id === id);
+      if (!g) return;
+      g.vote = decision;
+      playTone(decision === 'block' ? 480 : 820, 0.12);
+      logKernel(`[CONSENSUS VOTE] ${g.name} voted ${decision.toUpperCase()}.`);
+
+      const blocks = guardians.filter(x => x.vote === 'block').length;
+      const approvals = guardians.filter(x => x.vote === 'approve').length;
+
+      if (blocks >= 2) {
+        logKernel("[2-OF-5 CONSENSUS] Scammer number permanently blacklisted across Community Radar. Call terminated.", "crit");
+        speakWarning("Consensus reached. Scammer blacklisted and call terminated.");
+        callActive = false;
+        setHudWave(false);
+        document.getElementById('ngao-floating-hud').classList.add('hidden');
+      } else if (approvals >= 2) {
+        logKernel("[2-OF-5 CONSENSUS] Family Guardians verified transaction is safe. M-Pesa & *100# unlocked.", "ok");
+        resetSystem();
+      }
+      renderGuardians();
+    }
+
+    function simulateTimeoutEscalation() {
+      guardians[0].status = 'Timed Out';
+      guardians[1].status = 'Timed Out';
+      guardians[3].status = 'SMS Dispatched';
+      guardians[4].status = 'SMS Dispatched';
+      playTone(620, 0.16);
+      logKernel("[FAILSAFE ESCALATION] Owen & Muhammed unreachable after 90s. Dispatched SMS alerts to Backup Guardians #4 and #5.", "crit");
+      renderGuardians();
+    }
+
+    // ================= EXPORT *333# FORENSIC REPORT =================
+    function exportForensicPacket() {
+      playTone(750, 0.12);
+      const report = [
+        "=== NGAO-SAUTI FORENSIC INCIDENT PACKET (FOR SAFARICOM *333# / DCI) ===",
+        `Timestamp: ${new Date().toISOString()}`,
+        `Peak Scam Risk Score: ${riskScore}%`,
+        `Suspect Lines Flagged: +254724889102 (Voice Call), +254719882341 (Spoofed SMS)`,
+        `Child Safety Telemetry: Owen Mwangi verified safe at Moringa School Wi-Fi`,
+        `Family Consensus Pool: Owen Mwangi, Muhammed Hassan, Collins Mundia (2-of-5 Active)`,
+        "Status: Outgoing M-Pesa & SIM-Swap USSD (*100#) Protected."
+      ].join("\n");
+
+      const blob = new Blob([report], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Ngao_Sauti_Forensic_Report_333.txt";
+      a.click();
+      logKernel("[FORENSIC EXPORT] Generated tamper-proof incident report for Safaricom Fraud Desk (*333#).", "ok");
+    }
+
+    // ================= RESET & LOGGING =================
+    function resetSystem() {
+      riskScore = 5;
+      isCircuitLocked = false;
+      callActive = false;
+      activeChatThread = null;
+      clearInterval(ringInterval);
+      clearInterval(callInterval);
+      clearInterval(cooldownInterval);
+      setHudWave(false);
+
+      document.getElementById('phone-chassis').classList.remove('ringing-shake', 'scam-lock-active');
+      document.getElementById('incoming-call-screen').classList.add('hidden');
+      document.getElementById('interception-modal').classList.add('hidden');
+      document.getElementById('rogue-stk-modal').classList.add('hidden');
+      document.getElementById('ussd-modal').classList.add('hidden');
+      document.getElementById('ngao-floating-hud').classList.add('hidden');
+      document.getElementById('ngao-floating-hud').classList.remove('hud-danger');
+      document.getElementById('widget-state-text').innerText = 'SAFE • 5% RISK';
+      document.getElementById('widget-state-text').style.color = 'var(--green)';
+      document.getElementById('ngao-app-badge').innerText = 'ARMED';
+      document.getElementById('ngao-app-badge').style.color = 'var(--green)';
+
+      document.querySelectorAll('.vector-box').forEach(el => el.classList.remove('active'));
+      guardians.forEach((g, idx) => {
+        g.vote = null;
+        g.status = idx < 3 ? 'Online' : 'Standby';
+      });
+
+      updateRiskTelemetry();
+      renderGuardians();
+      closeChatThread();
+      openApp('home');
+    }
+
+    function logKernel(msg, level = '') {
+      const box = document.getElementById('kernel-log');
+      const now = new Date().toLocaleTimeString([], { hour12: false });
+      box.innerHTML = `<div class="log-entry ${level}">[${now}] ${msg}</div>` + box.innerHTML;
+    }
+
+    renderGuardians();
+  </script>
+</body>
+</html>
