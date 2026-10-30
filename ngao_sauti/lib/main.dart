@@ -1,13 +1,18 @@
 // ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:async';
-import 'dart:js' as js;
+import 'js_bridge_stub.dart'
+    if (dart.library.html) 'js_bridge_web.dart' as js_bridge;
 import 'dart:math';
+
 import 'package:flutter/material.dart';
+
+import 'scam_model.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const NgaoSautiApp());
 }
+
 
 // ============================================================================
 // 1. NATURAL HUMAN NEURAL VOICE & WEB AUDIO ENGINE
@@ -18,7 +23,7 @@ class NeuralVoiceEngine {
 
   static void warmUpVoices() {
     try {
-      js.context.callMethod('eval', [
+      js_bridge.eval([
         '''
         if ('speechSynthesis' in window) {
           window.speechSynthesis.getVoices();
@@ -26,7 +31,7 @@ class NeuralVoiceEngine {
             window.speechSynthesis.getVoices();
           };
         }
-        '''
+        ''',
       ]);
     } catch (_) {}
   }
@@ -38,7 +43,7 @@ class NeuralVoiceEngine {
   }) {
     if (!soundEnabled) return;
     try {
-      js.context.callMethod('eval', [
+      js_bridge.eval([
         '''
         (function() {
           const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -56,7 +61,7 @@ class NeuralVoiceEngine {
           osc.start();
           osc.stop(ctx.currentTime + (${durationMs / 1000}));
         })();
-        '''
+        ''',
       ]);
     } catch (_) {}
   }
@@ -67,7 +72,7 @@ class NeuralVoiceEngine {
     if (!soundEnabled) return;
     final cleanText = text.replaceAll("'", "").replaceAll('"', '');
     try {
-      js.context.callMethod('eval', [
+      js_bridge.eval([
         '''
         (function() {
           if (!('speechSynthesis' in window)) return;
@@ -116,14 +121,14 @@ class NeuralVoiceEngine {
           if (selected) u.voice = selected;
           window.speechSynthesis.speak(u);
         })();
-        '''
+        ''',
       ]);
     } catch (_) {}
   }
 
   static void stopSpeech() {
     try {
-      js.context.callMethod('eval', ['window.speechSynthesis.cancel();']);
+      js_bridge.eval(['window.speechSynthesis.cancel();']);
     } catch (_) {}
   }
 }
@@ -146,244 +151,6 @@ class DialogueTurn {
     this.riskSnapshot = 5,
     this.logitSnapshot = -1.1,
   });
-}
-
-class TrainingSample {
-  final String text;
-  final int label; // 1 = Scam, 0 = Safe / Genuine
-  final String category;
-
-  TrainingSample(this.text, this.label, this.category);
-}
-
-class MLInferenceResult {
-  final double probability;
-  final int riskPercentage;
-  final Map<String, double> matchedFeatureWeights;
-  final List<String> detectedVectors;
-  final double logitScore;
-  final String verdictExplanation;
-
-  MLInferenceResult({
-    required this.probability,
-    required this.riskPercentage,
-    required this.matchedFeatureWeights,
-    required this.detectedVectors,
-    required this.logitScore,
-    required this.verdictExplanation,
-  });
-}
-
-class OnDeviceScamMLModel {
-  final Map<String, double> weights = {};
-  double bias = -1.15;
-  double lastTrainingLoss = 0.0;
-  double trainingAccuracy = 0.0;
-  int totalEpochsTrained = 0;
-
-  final List<TrainingSample> dataset = [
-    // COERCIVE SCAM SAMPLES (Label = 1)
-    TrainingSample(
-      'hello mzazi niko hospitali kwa emergency mtoto wako amepata ajali mbaya ameumia',
-      1,
-      'Urgency',
-    ),
-    TrainingSample(
-      'hapana usikate simu na usipigie mtu daktari anasema tuma elfu kumi na tano kwa hii namba binafsi sasa hivi',
-      1,
-      'Urgency',
-    ),
-    TrainingSample(
-      'tuma pesa kwa namba yangu binafsi kabla mtoto aingie theatre sasa hivi',
-      1,
-      'Financial Coercion',
-    ),
-    TrainingSample(
-      'jambo nakupigia kutoka safaricom customer care kuna mwizi anajaribu kufanya sim swap kwa line yako',
-      1,
-      'Authority',
-    ),
-    TrainingSample(
-      'tafadhali bonyeza pin yako sasa hivi na usomee ile otp code imeingia kwa simu yako',
-      1,
-      'PIN / SIM Trap',
-    ),
-    TrainingSample(
-      'nimetuma pesa kimakosa tafadhali rudisha reverse kwa hii namba sasa hivi',
-      1,
-      'Financial Coercion',
-    ),
-    TrainingSample(
-      'weka pin ya mpesa kwa hiyo prompt imeingia usikate simu',
-      1,
-      'PIN / SIM Trap',
-    ),
-    TrainingSample(
-      'polisi wameshika kijana wako tuma elfu ishirini kwa namba binafsi',
-      1,
-      'Authority',
-    ),
-
-    // GENUINE INSTITUTIONAL & NORMAL SAFE SAMPLES (Label = 0)
-    TrainingSample(
-      'tunakupigia kutoka aga khan clinic kijana wako amepata homa kidogo kuja reception',
-      0,
-      'Safe',
-    ),
-    TrainingSample(
-      'usitume pesa kwa namba ya mtu binafsi mpigie mtoto uhakikishe kisha ulipe kwa official hospital paybill',
-      0,
-      'Safe',
-    ),
-    TrainingSample(
-      'unaweza kumpigia mtoto wako kwanza uhakikishe tuko ward four reception',
-      0,
-      'Safe',
-    ),
-    TrainingSample(
-      'niko hapa supermarket nanunua bidhaa wacha nilipe kwa merchant till',
-      0,
-      'Safe',
-    ),
-    TrainingSample(
-      'umefika nyumbani salama ndio niko darasani nitakupigia baadaye',
-      0,
-      'Safe',
-    ),
-    TrainingSample(
-      'tutakutana kesho asubuhi kwa mkutano wa familia asante sana',
-      0,
-      'Safe',
-    ),
-  ];
-
-  OnDeviceScamMLModel() {
-    trainModel(epochs: 75, learningRate: 0.25);
-  }
-
-  List<String> extractFeatures(String rawText) {
-    final cleaned = rawText
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
-        .split(RegExp(r'\s+'))
-        .where((w) => w.length > 1)
-        .toList();
-
-    final List<String> features = [...cleaned];
-    for (int i = 0; i < cleaned.length - 1; i++) {
-      features.add('${cleaned[i]}_${cleaned[i + 1]}');
-    }
-    return features;
-  }
-
-  double _sigmoid(double z) {
-    if (z > 20) return 0.9999;
-    if (z < -20) return 0.0001;
-    return 1.0 / (1.0 + exp(-z));
-  }
-
-  void trainModel({int epochs = 50, double learningRate = 0.22}) {
-    double totalLoss = 0.0;
-    int correct = 0;
-
-    for (int epoch = 0; epoch < epochs; epoch++) {
-      totalLoss = 0.0;
-      correct = 0;
-
-      for (final sample in dataset) {
-        final feats = extractFeatures(sample.text);
-        double z = bias;
-        for (final f in feats) {
-          z += (weights[f] ?? 0.0);
-        }
-
-        final pred = _sigmoid(z);
-        final y = sample.label.toDouble();
-
-        totalLoss += -(y * log(pred + 1e-9) + (1 - y) * log(1 - pred + 1e-9));
-
-        if ((pred >= 0.5 && sample.label == 1) ||
-            (pred < 0.5 && sample.label == 0)) {
-          correct++;
-        }
-
-        final error = pred - y;
-        bias -= learningRate * error * 0.3;
-        for (final f in feats) {
-          weights[f] = (weights[f] ?? 0.0) - (learningRate * error);
-        }
-      }
-      totalEpochsTrained++;
-    }
-
-    lastTrainingLoss = totalLoss / dataset.length;
-    trainingAccuracy = (correct / dataset.length) * 100.0;
-  }
-
-  MLInferenceResult predict(String transcriptText) {
-    final feats = extractFeatures(transcriptText);
-    double z = bias;
-    final Map<String, double> activeWeights = {};
-    final Set<String> vectors = {};
-
-    for (final f in feats) {
-      final w = weights[f] ?? 0.0;
-      z += w;
-      if (w.abs() > 0.15) {
-        activeWeights[f] = w;
-      }
-      if (f.contains('sasa_hivi') ||
-          f.contains('usikate_simu') ||
-          f.contains('ameumia') ||
-          f.contains('ajali')) {
-        vectors.add('Urgency');
-      }
-      if (f.contains('safaricom') ||
-          f.contains('customer_care') ||
-          f.contains('polisi')) {
-        vectors.add('Authority');
-      }
-      if (f.contains('namba_binafsi') ||
-          f.contains('rudisha') ||
-          f.contains('tuma_elfu') ||
-          f.contains('reverse')) {
-        vectors.add('Financial Coercion');
-      }
-      if (f.contains('pin') || f.contains('otp') || f.contains('sim_swap')) {
-        vectors.add('PIN / SIM Trap');
-      }
-    }
-
-    final prob = _sigmoid(z);
-    final riskPct = (prob * 100).round().clamp(4, 99);
-
-    String explanation;
-    if (riskPct >= 75) {
-      explanation =
-          'HIGH THREAT: Coercive urgency + personal line/PIN demand + verification blocked.';
-    } else if (transcriptText.toLowerCase().contains('paybill') ||
-        transcriptText.toLowerCase().contains('reception')) {
-      explanation =
-          'VERIFIED INSTITUTIONAL CALL: Caller directed to Official Paybill & encouraged independent verification.';
-    } else {
-      explanation =
-          'SAFE CONTEXT: Normal conversational cadence with zero coercion vectors.';
-    }
-
-    return MLInferenceResult(
-      probability: prob,
-      riskPercentage: riskPct,
-      matchedFeatureWeights: activeWeights,
-      detectedVectors: vectors.toList(),
-      logitScore: z,
-      verdictExplanation: explanation,
-    );
-  }
-
-  void addSampleAndRetrain(String text, int label, String category) {
-    dataset.add(TrainingSample(text, label, category));
-    trainModel(epochs: 45, learningRate: 0.25);
-  }
 }
 
 // ============================================================================
@@ -509,7 +276,8 @@ class OnboardingFlowScreen extends StatefulWidget {
     required String phone,
     required String safePhrase,
     required List<Guardian> guardians,
-  }) onCompleted;
+  })
+  onCompleted;
 
   const OnboardingFlowScreen({super.key, required this.onCompleted});
 
@@ -597,7 +365,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     final phone = _gPhoneCtrl.text.trim();
     if (name.isEmpty || phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both Guardian Name and Phone Number.')),
+        const SnackBar(
+          content: Text('Please enter both Guardian Name and Phone Number.'),
+        ),
       );
       return;
     }
@@ -622,7 +392,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       if (_nameCtrl.text.trim().isEmpty || _phoneCtrl.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Enter your name & phone number, or tap "Quick-Fill Demo" at top right.'),
+            content: Text(
+              'Enter your name & phone number, or tap "Quick-Fill Demo" at top right.',
+            ),
           ),
         );
         return;
@@ -632,7 +404,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       if (_draftGuardians.length < 2) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please register at least 2 Family Guardians for 2-of-N consensus.'),
+            content: Text(
+              'Please register at least 2 Family Guardians for 2-of-N consensus.',
+            ),
           ),
         );
         return;
@@ -661,7 +435,11 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             SizedBox(width: 10),
             Text(
               'NGAO-SAUTI ONBOARDING',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 0.8),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
             ),
           ],
         ),
@@ -676,7 +454,11 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
               icon: const Icon(Icons.bolt, size: 16, color: Color(0xFF06B6D4)),
               label: const Text(
                 'Quick-Fill Demo',
-                style: TextStyle(color: Color(0xFF06B6D4), fontWeight: FontWeight.bold, fontSize: 12),
+                style: TextStyle(
+                  color: Color(0xFF06B6D4),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
               ),
             ),
           ),
@@ -705,8 +487,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                   child: _step == 0
                       ? _buildStep1Profile()
                       : _step == 1
-                          ? _buildStep2Guardians()
-                          : _buildStep3Permissions(),
+                      ? _buildStep2Guardians()
+                      : _buildStep3Permissions(),
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -724,13 +506,23 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF3B82F6),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                       onPressed: _nextStep,
-                      icon: Icon(_step == 2 ? Icons.verified_user : Icons.arrow_forward, size: 18),
+                      icon: Icon(
+                        _step == 2 ? Icons.verified_user : Icons.arrow_forward,
+                        size: 18,
+                      ),
                       label: Text(
-                        _step == 2 ? 'Activate Ngao-Sauti Protection' : 'Continue',
+                        _step == 2
+                            ? 'Activate Ngao-Sauti Protection'
+                            : 'Continue',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -755,15 +547,15 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           color: active
               ? const Color(0xFF3B82F6).withOpacity(0.2)
               : done
-                  ? const Color(0xFF10B981).withOpacity(0.15)
-                  : const Color(0xFF0F172A),
+              ? const Color(0xFF10B981).withOpacity(0.15)
+              : const Color(0xFF0F172A),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: active
                 ? const Color(0xFF3B82F6)
                 : done
-                    ? const Color(0xFF10B981)
-                    : const Color(0xFF1E293B),
+                ? const Color(0xFF10B981)
+                : const Color(0xFF1E293B),
           ),
         ),
         child: Text(
@@ -775,8 +567,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             color: active
                 ? Colors.white
                 : done
-                    ? const Color(0xFF10B981)
-                    : Colors.white54,
+                ? const Color(0xFF10B981)
+                : Colors.white54,
           ),
         ),
       ),
@@ -913,12 +705,25 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                     isDense: true,
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'Son / Daughter', child: Text('Son / Daughter')),
-                    DropdownMenuItem(value: 'Brother / Sister', child: Text('Brother / Sister')),
-                    DropdownMenuItem(value: 'Nephew / Niece', child: Text('Nephew / Niece')),
-                    DropdownMenuItem(value: 'Trusted Neighbor', child: Text('Trusted Neighbor')),
+                    DropdownMenuItem(
+                      value: 'Son / Daughter',
+                      child: Text('Son / Daughter'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Brother / Sister',
+                      child: Text('Brother / Sister'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Nephew / Niece',
+                      child: Text('Nephew / Niece'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Trusted Neighbor',
+                      child: Text('Trusted Neighbor'),
+                    ),
                   ],
-                  onChanged: (v) => setState(() => _gRelation = v ?? 'Son / Daughter'),
+                  onChanged: (v) =>
+                      setState(() => _gRelation = v ?? 'Son / Daughter'),
                 ),
               ),
               const SizedBox(width: 10),
@@ -943,7 +748,11 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           const Divider(),
           Text(
             'Registered Guardians (${_draftGuardians.length}):',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white70,
+            ),
           ),
           const SizedBox(height: 8),
           if (_draftGuardians.isEmpty)
@@ -962,13 +771,25 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                 child: ListTile(
                   dense: true,
                   leading: CircleAvatar(
-                    backgroundColor: g.isPrimary ? const Color(0xFF3B82F6) : Colors.amber.shade800,
-                    child: Text(g.name[0], style: const TextStyle(color: Colors.white, fontSize: 13)),
+                    backgroundColor: g.isPrimary
+                        ? const Color(0xFF3B82F6)
+                        : Colors.amber.shade800,
+                    child: Text(
+                      g.name[0],
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
                   ),
-                  title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(
+                    g.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   subtitle: Text('${g.phone} • ${g.relation}'),
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Colors.redAccent,
+                      size: 18,
+                    ),
                     onPressed: () => setState(() => _draftGuardians.remove(g)),
                   ),
                 ),
@@ -1000,28 +821,40 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             value: _permLocalModelLoaded,
             onChanged: (v) => setState(() => _permLocalModelLoaded = v),
             title: const Text('On-Device Logistic Perceptron + Bigram NLU'),
-            subtitle: const Text('Runs 100% offline with 0 MB mobile data required.'),
+            subtitle: const Text(
+              'Runs 100% offline with 0 MB mobile data required.',
+            ),
             activeColor: const Color(0xFF10B981),
           ),
           SwitchListTile(
             value: _permVoiceEngine,
             onChanged: (v) => setState(() => _permVoiceEngine = v),
-            title: const Text('Natural Neural Voice Assistant & Call Screening'),
-            subtitle: const Text('Human-paced spoken alerts & real-time two-way call analysis.'),
+            title: const Text(
+              'Natural Neural Voice Assistant & Call Screening',
+            ),
+            subtitle: const Text(
+              'Human-paced spoken alerts & real-time two-way call analysis.',
+            ),
             activeColor: const Color(0xFF10B981),
           ),
           SwitchListTile(
             value: _permAccessibility,
             onChanged: (v) => setState(() => _permAccessibility = v),
-            title: const Text('Context-Aware Merchant STK & USSD (*100#) Shield'),
-            subtitle: const Text('Allows normal retail/hospital payments when safe; freezes PIN entry during scam calls.'),
+            title: const Text(
+              'Context-Aware Merchant STK & USSD (*100#) Shield',
+            ),
+            subtitle: const Text(
+              'Allows normal retail/hospital payments when safe; freezes PIN entry during scam calls.',
+            ),
             activeColor: const Color(0xFF10B981),
           ),
           SwitchListTile(
             value: _permOfflineSms,
             onChanged: (v) => setState(() => _permOfflineSms = v),
             title: const Text('Offline GSM SMS Guardian Consensus Fallback'),
-            subtitle: const Text('Dispatches encrypted SMS verification codes if mobile data is off.'),
+            subtitle: const Text(
+              'Dispatches encrypted SMS verification codes if mobile data is off.',
+            ),
             activeColor: const Color(0xFF10B981),
           ),
         ],
@@ -1075,7 +908,7 @@ class _MainShellScreenState extends State<MainShellScreen>
   String _activeCallerNumber = 'No active call';
   String _pendingScenario = 'hospital_scam';
   int _callSeconds = 0;
-  String _accumulatedCallText = '';
+  final List<String> _callTurns = [];
 
   Timer? _ringTimer;
   Timer? _callTimer;
@@ -1100,25 +933,23 @@ class _MainShellScreenState extends State<MainShellScreen>
   int _trainLabel = 1;
 
   // Custom SMS Injector Controllers for Tab 2
-  final TextEditingController _smsSenderCtrl =
-      TextEditingController(text: '+254719882341');
+  final TextEditingController _smsSenderCtrl = TextEditingController(
+    text: '+254719882341',
+  );
   final TextEditingController _smsBodyCtrl = TextEditingController(
-    text:
-        'UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU on 27/10/26. Please reverse urgently.',
+    text: 'UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU on 27/10/26. Please reverse urgently.',
   );
 
   final List<SmsMessageItem> _smsInbox = [
     SmsMessageItem(
       sender: '+254719882341',
-      body:
-          'UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU 0719882341 on 27/10/26 at 9:10 AM. New M-PESA balance is Ksh63,200.00.',
+      body: 'UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU 0719882341 on 27/10/26 at 9:10 AM. New M-PESA balance is Ksh63,200.00.',
       time: '9:10 AM',
       isOfficialToken: false,
     ),
     SmsMessageItem(
       sender: 'MPESA',
-      body:
-          'UAY12P4L9M Confirmed. Ksh1,850.00 paid to RETAIL SUPERMARKET TILL 512900 on 27/10/26 at 8:15 AM.',
+      body: 'UAY12P4L9M Confirmed. Ksh1,850.00 paid to RETAIL SUPERMARKET TILL 512900 on 27/10/26 at 8:15 AM.',
       time: '8:15 AM',
       isOfficialToken: true,
     ),
@@ -1201,7 +1032,7 @@ class _MainShellScreenState extends State<MainShellScreen>
       _isRinging = false;
       _isCallActive = true;
       _callSeconds = 0;
-      _accumulatedCallText = '';
+      _callTurns.clear();
       _liveTurns.clear();
     });
 
@@ -1214,20 +1045,17 @@ class _MainShellScreenState extends State<MainShellScreen>
       'hospital_scam': [
         const DialogueTurn(
           speaker: 'Caller',
-          text:
-              'Hello, mzazi! Niko hapa hospitali, kwa emergency. Mtoto wako amepata ajali mbaya, na ameumia!',
+          text: 'Hello, mzazi! Niko hapa hospitali, kwa emergency. Mtoto wako amepata ajali mbaya, na ameumia!',
           role: 'caller',
         ),
         DialogueTurn(
           speaker: 'You (${widget.userName})',
-          text:
-              'Mungu wangu! Wacha nimpigie mtoto wangu simu kwanza, nihakikishe.',
+          text: 'Mungu wangu! Wacha nimpigie mtoto wangu simu kwanza, nihakikishe.',
           role: 'user',
         ),
         const DialogueTurn(
           speaker: 'Caller',
-          text:
-              'Hapana, usikate simu na usipigie mtu! Daktari anasema, tuma elfu kumi na tano kwa hii namba binafsi, sasa hivi!',
+          text: 'Hapana, usikate simu na usipigie mtu! Daktari anasema, tuma elfu kumi na tano kwa hii namba binafsi, sasa hivi!',
           role: 'caller',
         ),
       ],
@@ -1245,16 +1073,14 @@ class _MainShellScreenState extends State<MainShellScreen>
         ),
         const DialogueTurn(
           speaker: 'Hospital Desk',
-          text:
-              'Usitume pesa kwa namba ya mtu binafsi. Unaweza kumpigia mtoto wako uhakikishe, kisha ulipe kwa Official Hospital Paybill ukifika reception.',
+          text: 'Usitume pesa kwa namba ya mtu binafsi. Unaweza kumpigia mtoto wako uhakikishe, kisha ulipe kwa Official Hospital Paybill ukifika reception.',
           role: 'caller',
         ),
       ],
       'safaricom_scam': [
         const DialogueTurn(
           speaker: 'Caller',
-          text:
-              'Jambo, nakupigia kutoka Safaricom Customer Care. Kuna mwizi anajaribu kufanya, SIM swap, kwa line yako.',
+          text: 'Jambo, nakupigia kutoka Safaricom Customer Care. Kuna mwizi anajaribu kufanya, SIM swap, kwa line yako.',
           role: 'caller',
         ),
         DialogueTurn(
@@ -1264,8 +1090,7 @@ class _MainShellScreenState extends State<MainShellScreen>
         ),
         const DialogueTurn(
           speaker: 'Caller',
-          text:
-              'Tafadhali, bonyeza PIN yako sasa hivi, na usomee ile OTP code imeingia kwa simu yako!',
+          text: 'Tafadhali, bonyeza PIN yako sasa hivi, na usomee ile OTP code imeingia kwa simu yako!',
           role: 'caller',
         ),
       ],
@@ -1291,11 +1116,13 @@ class _MainShellScreenState extends State<MainShellScreen>
   void _processDialogueTurn(DialogueTurn turn) {
     NeuralVoiceEngine.speak(turn.text, role: turn.role);
 
-    _accumulatedCallText = '$_accumulatedCallText ${turn.text}'.trim();
-    final result = _mlModel.predict(_accumulatedCallText);
+    _callTurns.add(turn.text);
+    final result = _mlModel.predictWindow(
+      _callTurns,
+    ); // scores the last 3 turns
 
     setState(() {
-      _riskScore = result.riskPercentage;
+      _riskScore = max(_riskScore, result.riskPercentage);
       _lastLogit = result.logitScore;
       _verdictExplanation = result.verdictExplanation;
       _lastMatchedWeights = result.matchedFeatureWeights;
@@ -1405,7 +1232,11 @@ class _MainShellScreenState extends State<MainShellScreen>
                   Text(
                     '1. Normal voice calls stay 100% OPEN so you can call your family directly.\n'
                     '2. Your Family Guardians have been alerted—if the emergency is genuine, 2 taps of "Approve Safe" unlock M-Pesa immediately.',
-                    style: TextStyle(fontSize: 11.5, color: Colors.white70, height: 1.4),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Colors.white70,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
@@ -1438,8 +1269,9 @@ class _MainShellScreenState extends State<MainShellScreen>
   }
 
   void _placeDirectFamilyCall() {
-    final firstGuardian =
-        _guardians.isNotEmpty ? _guardians.first.name : 'Family Guardian';
+    final firstGuardian = _guardians.isNotEmpty
+        ? _guardians.first.name
+        : 'Family Guardian';
     NeuralVoiceEngine.speak(
       'Dialing $firstGuardian directly on a verified voice line.',
       role: 'ai',
@@ -1603,10 +1435,9 @@ class _MainShellScreenState extends State<MainShellScreen>
       _isFinancialLocked = false;
       _riskScore = 5;
       _lastLogit = _mlModel.bias;
-      _verdictExplanation =
-          'SAFE CONTEXT: Background auditor armed. Normal payments & USSD allowed.';
+      _verdictExplanation = 'SAFE CONTEXT: Background auditor armed. Normal payments & USSD allowed.';
       _lastMatchedWeights = {};
-      _accumulatedCallText = '';
+      _callTurns.clear();
       _activeCallerName = 'Standby';
       _activeCallerNumber = 'No active call';
       _triggeredCategories.clear();
@@ -1639,7 +1470,11 @@ class _MainShellScreenState extends State<MainShellScreen>
                 color: const Color(0xFF06B6D4).withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.shield, color: Color(0xFF06B6D4), size: 20),
+              child: const Icon(
+                Icons.shield,
+                color: Color(0xFF06B6D4),
+                size: 20,
+              ),
             ),
             const SizedBox(width: 10),
             Column(
@@ -1647,10 +1482,14 @@ class _MainShellScreenState extends State<MainShellScreen>
               children: [
                 const Text(
                   'NGAO-SAUTI OS',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 0.6),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                  ),
                 ),
                 Text(
-                  'Protected: ${widget.userName} (${widget.userPhone}) • ML Acc: ${_mlModel.trainingAccuracy.toStringAsFixed(0)}%',
+                  'Protected: ${widget.userName} (${widget.userPhone}) • Held-out F1: ${OnDeviceScamMLModel.heldOutF1.toStringAsFixed(2)}',
                   style: const TextStyle(fontSize: 11, color: Colors.white60),
                 ),
               ],
@@ -1682,7 +1521,10 @@ class _MainShellScreenState extends State<MainShellScreen>
               onTap: () =>
                   setState(() => _isOfflineNoDataMode = !_isOfflineNoDataMode),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF10B981).withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -1691,13 +1533,17 @@ class _MainShellScreenState extends State<MainShellScreen>
                 child: Row(
                   children: [
                     Icon(
-                      _isOfflineNoDataMode ? Icons.airplanemode_active : Icons.wifi,
+                      _isOfflineNoDataMode
+                          ? Icons.airplanemode_active
+                          : Icons.wifi,
                       size: 14,
                       color: const Color(0xFF10B981),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      _isOfflineNoDataMode ? 'ON-DEVICE ML (0 DATA)' : 'HYBRID ML',
+                      _isOfflineNoDataMode
+                          ? 'ON-DEVICE ML (0 DATA)'
+                          : 'HYBRID ML',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -1784,8 +1630,8 @@ class _MainShellScreenState extends State<MainShellScreen>
     final Color statusColor = isDanger
         ? const Color(0xFFEF4444)
         : _riskScore >= 40
-            ? Colors.amber
-            : const Color(0xFF10B981);
+        ? Colors.amber
+        : const Color(0xFF10B981);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(18),
@@ -1806,7 +1652,10 @@ class _MainShellScreenState extends State<MainShellScreen>
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: statusColor.withOpacity(0.7), width: 1.5),
+              border: Border.all(
+                color: statusColor.withOpacity(0.7),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: statusColor.withOpacity(0.15),
@@ -1852,7 +1701,10 @@ class _MainShellScreenState extends State<MainShellScreen>
                       const SizedBox(height: 4),
                       Text(
                         _verdictExplanation,
-                        style: const TextStyle(fontSize: 12.5, color: Colors.white70),
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Colors.white70,
+                        ),
                       ),
                       if (_isFinancialLocked) ...[
                         const SizedBox(height: 6),
@@ -1981,42 +1833,43 @@ class _MainShellScreenState extends State<MainShellScreen>
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: [
-                    'Urgency',
-                    'Authority',
-                    'Financial Coercion',
-                    'PIN / SIM Trap'
-                  ].map((vec) {
-                    final active = _triggeredCategories.contains(vec);
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: active
-                            ? const Color(0xFFEF4444).withOpacity(0.2)
-                            : const Color(0xFF030712),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: active
-                              ? const Color(0xFFEF4444)
-                              : const Color(0xFF1E293B),
-                        ),
-                      ),
-                      child: Text(
-                        vec,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: active
-                              ? const Color(0xFFFCA5A5)
-                              : Colors.white54,
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                  children:
+                      [
+                        'Urgency',
+                        'Authority',
+                        'Financial Coercion',
+                        'PIN / SIM Trap',
+                      ].map((vec) {
+                        final active = _triggeredCategories.contains(vec);
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? const Color(0xFFEF4444).withOpacity(0.2)
+                                : const Color(0xFF030712),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: active
+                                  ? const Color(0xFFEF4444)
+                                  : const Color(0xFF1E293B),
+                            ),
+                          ),
+                          child: Text(
+                            vec,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: active
+                                  ? const Color(0xFFFCA5A5)
+                                  : Colors.white54,
+                            ),
+                          ),
+                        );
+                      }).toList(),
                 ),
                 const SizedBox(height: 12),
 
@@ -2035,7 +1888,10 @@ class _MainShellScreenState extends State<MainShellScreen>
                           child: Text(
                             'Select an incoming call scenario above to hear the live two-way conversation and watch the On-Device ML score each sentence.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12.5, color: Colors.white38),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: Colors.white38,
+                            ),
                           ),
                         )
                       : ListView.builder(
@@ -2059,7 +1915,8 @@ class _MainShellScreenState extends State<MainShellScreen>
                                 decoration: BoxDecoration(
                                   color: isCaller
                                       ? const Color(0xFF1E293B).withOpacity(0.6)
-                                      : const Color(0xFF3B82F6).withOpacity(0.14),
+                                      : const Color(0xFF3B82F6)
+                                            .withOpacity(0.14),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Column(
@@ -2113,8 +1970,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                       child: TextField(
                         controller: _customSpeechCtrl,
                         decoration: InputDecoration(
-                          hintText:
-                              'Speak or type live phrase into call (e.g. "Tuma pesa kwa namba binafsi sasa hivi")...',
+                          hintText: 'Speak or type live phrase into call (e.g. "Tuma pesa kwa namba binafsi sasa hivi")...',
                           filled: true,
                           fillColor: const Color(0xFF030712),
                           isDense: true,
@@ -2375,8 +2231,12 @@ class _MainShellScreenState extends State<MainShellScreen>
                       Row(
                         children: [
                           Icon(
-                            isSpoof ? Icons.warning_amber_rounded : Icons.verified,
-                            color: isSpoof ? Colors.amber : const Color(0xFF10B981),
+                            isSpoof
+                                ? Icons.warning_amber_rounded
+                                : Icons.verified,
+                            color: isSpoof
+                                ? Colors.amber
+                                : const Color(0xFF10B981),
                             size: 18,
                           ),
                           const SizedBox(width: 8),
@@ -2388,14 +2248,20 @@ class _MainShellScreenState extends State<MainShellScreen>
                       ),
                       Text(
                         sms.time,
-                        style: const TextStyle(fontSize: 11, color: Colors.white54),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.white54,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
                     sms.body,
-                    style: const TextStyle(fontSize: 12.5, color: Colors.white70),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: Colors.white70,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -2408,7 +2274,9 @@ class _MainShellScreenState extends State<MainShellScreen>
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.bold,
-                          color: isSpoof ? Colors.amber : const Color(0xFF10B981),
+                          color: isSpoof
+                              ? Colors.amber
+                              : const Color(0xFF10B981),
                         ),
                       ),
                       if (isSpoof)
@@ -2704,7 +2572,10 @@ class _MainShellScreenState extends State<MainShellScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF0F172A),
-        title: const Text('Add Family Guardian', style: TextStyle(fontSize: 16)),
+        title: const Text(
+          'Add Family Guardian',
+          style: TextStyle(fontSize: 16),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -2824,8 +2695,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                 TextField(
                   controller: _trainSentenceCtrl,
                   decoration: const InputDecoration(
-                    hintText:
-                        'Enter new Swahili/Sheng phrase (e.g. "Tuma pesa kwa wakili sasa hivi")...',
+                    hintText: 'Enter new Swahili/Sheng phrase (e.g. "Tuma pesa kwa wakili sasa hivi")...',
                     filled: true,
                     fillColor: Color(0xFF030712),
                     border: OutlineInputBorder(),
