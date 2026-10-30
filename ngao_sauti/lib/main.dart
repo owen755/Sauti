@@ -1,12 +1,13 @@
-// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+// ignore_for_file: deprecated_member_use
 import 'dart:async';
-import 'dart:js' as js;
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const NgaoSautiApp());
+  runApp(const SautiApp());
 }
 
 // ============================================================================
@@ -14,116 +15,27 @@ void main() {
 // ============================================================================
 
 class NeuralVoiceEngine {
+  static final FlutterTts _tts = FlutterTts();
   static bool soundEnabled = true;
 
-  static void warmUpVoices() {
+  static Future<void> warmUpVoices() async {
     try {
-      js.context.callMethod('eval', [
-        '''
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.getVoices();
-          window.speechSynthesis.onvoiceschanged = function() {
-            window.speechSynthesis.getVoices();
-          };
-        }
-        '''
-      ]);
+      await _tts.setLanguage('en-US');
     } catch (_) {}
   }
 
-  static void playTone({
-    int freq = 800,
-    int durationMs = 220,
-    String type = 'sine',
-  }) {
+  static Future<void> speak(String text, {String role = 'ai'}) async {
     if (!soundEnabled) return;
     try {
-      js.context.callMethod('eval', [
-        '''
-        (function() {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          if (!window._ngaoAudioCtx) window._ngaoAudioCtx = new AudioCtx();
-          const ctx = window._ngaoAudioCtx;
-          if (ctx.state === 'suspended') ctx.resume();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = '$type';
-          osc.frequency.setValueAtTime($freq, ctx.currentTime);
-          gain.gain.setValueAtTime(0.06, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (${durationMs / 1000}));
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + (${durationMs / 1000}));
-        })();
-        '''
-      ]);
+      await warmUpVoices();
+      await _tts.stop();
+      await _tts.speak(text);
     } catch (_) {}
   }
 
-  /// Selects Cloud Neural / Natural voices in Microsoft Edge & Chrome
-  /// with human breath pacing via punctuation.
-  static void speak(String text, {String role = 'ai'}) {
-    if (!soundEnabled) return;
-    final cleanText = text.replaceAll("'", "").replaceAll('"', '');
+  static Future<void> stopSpeech() async {
     try {
-      js.context.callMethod('eval', [
-        '''
-        (function() {
-          if (!('speechSynthesis' in window)) return;
-          window.speechSynthesis.cancel();
-
-          const u = new SpeechSynthesisUtterance('$cleanText');
-          const voices = window.speechSynthesis.getVoices();
-
-          const naturalPool = voices.filter(v =>
-            v.name.includes('Natural') ||
-            v.name.includes('Online') ||
-            v.name.includes('Google')
-          );
-
-          let selected = null;
-          if ('$role' === 'ai') {
-            selected = naturalPool.find(v =>
-              v.name.includes('Asilia') ||
-              v.name.includes('Aria') ||
-              v.name.includes('Sonia') ||
-              v.name.includes('Jenny') ||
-              v.lang.includes('en-KE') ||
-              v.lang.includes('en-GB')
-            ) || naturalPool[0] || voices[0];
-            u.pitch = 1.0;
-            u.rate = 0.93;
-          } else if ('$role' === 'caller') {
-            selected = naturalPool.find(v =>
-              v.name.includes('Chilemba') ||
-              v.name.includes('Mitchell') ||
-              v.name.includes('Guy') ||
-              v.name.includes('Ryan')
-            ) || naturalPool[0] || voices[0];
-            u.pitch = 0.88;
-            u.rate = 0.98;
-          } else {
-            selected = naturalPool.find(v =>
-              v.name.includes('Asilia') ||
-              v.name.includes('Libby') ||
-              v.name.includes('Female')
-            ) || naturalPool[1] || naturalPool[0] || voices[0];
-            u.pitch = 1.06;
-            u.rate = 0.96;
-          }
-
-          if (selected) u.voice = selected;
-          window.speechSynthesis.speak(u);
-        })();
-        '''
-      ]);
-    } catch (_) {}
-  }
-
-  static void stopSpeech() {
-    try {
-      js.context.callMethod('eval', ['window.speechSynthesis.cancel();']);
+      await _tts.stop();
     } catch (_) {}
   }
 }
@@ -428,13 +340,13 @@ class SmsMessageItem {
 // 4. ROOT APPLICATION & CONTROLLER
 // ============================================================================
 
-class NgaoSautiApp extends StatelessWidget {
-  const NgaoSautiApp({super.key});
+class SautiApp extends StatelessWidget {
+  const SautiApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Ngao-Sauti — On-Device AI Call & Payment Firewall',
+      title: 'Sauti — Scam Safety Assistant',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -543,55 +455,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     });
   }
 
-  void _loadDemoPreset() {
-    setState(() {
-      _nameCtrl.text = 'Mama Njeri';
-      _phoneCtrl.text = '0722 109 482';
-      _phraseCtrl.text = 'Nyumba Salama';
-      _draftGuardians.clear();
-      _draftGuardians.addAll([
-        Guardian(
-          id: '1',
-          name: 'Owen Mwangi',
-          phone: '0711 223 344',
-          relation: 'Son (Primary)',
-          isPrimary: true,
-        ),
-        Guardian(
-          id: '2',
-          name: 'Muhammed Hassan',
-          phone: '0722 556 677',
-          relation: 'Brother (Primary)',
-          isPrimary: true,
-        ),
-        Guardian(
-          id: '3',
-          name: 'Collins Mundia',
-          phone: '0733 889 900',
-          relation: 'Nephew (Primary)',
-          isPrimary: true,
-        ),
-        Guardian(
-          id: '4',
-          name: 'Grace Wanjiku',
-          phone: '0744 111 222',
-          relation: 'Trusted Neighbor (SMS Backup)',
-          isPrimary: false,
-          status: 'SMS Fallback',
-        ),
-      ]);
-    });
-    NeuralVoiceEngine.speak(
-      'Welcome, Mama Njeri. Owen, Muhammed, and Collins have been registered as your trusted family guardians.',
-      role: 'ai',
-    );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Loaded Team Preset (Owen, Muhammed, Collins, Grace).'),
-      ),
-    );
-  }
-
   void _addGuardianToList() {
     final name = _gNameCtrl.text.trim();
     final phone = _gPhoneCtrl.text.trim();
@@ -622,7 +485,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
       if (_nameCtrl.text.trim().isEmpty || _phoneCtrl.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Enter your name & phone number, or tap "Quick-Fill Demo" at top right.'),
+            content: Text('Enter your name and phone number to continue.'),
           ),
         );
         return;
@@ -665,22 +528,6 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             ),
           ],
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: TextButton.icon(
-              style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFF06B6D4).withOpacity(0.15),
-              ),
-              onPressed: _loadDemoPreset,
-              icon: const Icon(Icons.bolt, size: 16, color: Color(0xFF06B6D4)),
-              label: const Text(
-                'Quick-Fill Demo',
-                style: TextStyle(color: Color(0xFF06B6D4), fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-            ),
-          ),
-        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -950,7 +797,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'No guardians added yet. Add above or tap "Quick-Fill Demo" in the top bar.',
+                'No guardians added yet. Add a trusted contact above.',
                 style: TextStyle(fontSize: 12, color: Colors.amber),
               ),
             )
@@ -1054,43 +901,24 @@ class MainShellScreen extends StatefulWidget {
   State<MainShellScreen> createState() => _MainShellScreenState();
 }
 
-class _MainShellScreenState extends State<MainShellScreen>
-    with TickerProviderStateMixin {
+class _MainShellScreenState extends State<MainShellScreen> {
   int _selectedTab = 0;
-  bool _isOfflineNoDataMode = true;
   bool _audioMuted = false;
 
   final OnDeviceScamMLModel _mlModel = OnDeviceScamMLModel();
 
-  bool _isRinging = false;
-  bool _isCallActive = false;
-  bool _isFinancialLocked = false;
-  int _riskScore = 5;
-  double _lastLogit = -1.15;
-  String _verdictExplanation =
-      'SAFE CONTEXT: Background auditor armed. Normal payments & USSD allowed.';
+  int _riskScore = 0;
+  double _lastLogit = 0;
+  String _verdictExplanation = 'No text has been analyzed.';
   Map<String, double> _lastMatchedWeights = {};
 
-  String _activeCallerName = 'Standby';
-  String _activeCallerNumber = 'No active call';
-  String _pendingScenario = 'hospital_scam';
-  int _callSeconds = 0;
   String _accumulatedCallText = '';
-
-  Timer? _ringTimer;
-  Timer? _callTimer;
-  Timer? _scriptTimer;
-  Timer? _cooldownTimer;
-  int _cooldownSeconds = 900; // 15-minute cooldown
-
-  late AnimationController _pulseController;
 
   final Set<String> _triggeredCategories = {};
   final List<DialogueTurn> _liveTurns = [];
   final List<String> _systemLogs = [
-    '[ML BOOT] On-Device SGD Logistic Perceptron trained across 14 Swahili/Sheng/English samples.',
-    '[VOICE ENGINE] Natural Neural Voice synthesizer linked with punctuation breath pacing.',
-    '[CONTEXT SHIELD] Merchant STK & *100# USSD filter armed.',
+    '[SAUTI] Local phrase screening is ready. No call audio is monitored.',
+    '[SAUTI] Results are advisory and do not block calls or payments.',
   ];
 
   late List<Guardian> _guardians;
@@ -1099,49 +927,19 @@ class _MainShellScreenState extends State<MainShellScreen>
   final TextEditingController _trainSentenceCtrl = TextEditingController();
   int _trainLabel = 1;
 
-  // Custom SMS Injector Controllers for Tab 2
-  final TextEditingController _smsSenderCtrl =
-      TextEditingController(text: '+254719882341');
-  final TextEditingController _smsBodyCtrl = TextEditingController(
-    text:
-        'UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU on 27/10/26. Please reverse urgently.',
-  );
-
-  final List<SmsMessageItem> _smsInbox = [
-    SmsMessageItem(
-      sender: '+254719882341',
-      body:
-          'UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU 0719882341 on 27/10/26 at 9:10 AM. New M-PESA balance is Ksh63,200.00.',
-      time: '9:10 AM',
-      isOfficialToken: false,
-    ),
-    SmsMessageItem(
-      sender: 'MPESA',
-      body:
-          'UAY12P4L9M Confirmed. Ksh1,850.00 paid to RETAIL SUPERMARKET TILL 512900 on 27/10/26 at 8:15 AM.',
-      time: '8:15 AM',
-      isOfficialToken: true,
-    ),
-  ];
+  final TextEditingController _smsSenderCtrl = TextEditingController();
+  final TextEditingController _smsBodyCtrl = TextEditingController();
+  final List<SmsMessageItem> _smsInbox = [];
 
   @override
   void initState() {
     super.initState();
     _guardians = List.from(widget.initialGuardians);
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1100),
-    )..repeat(reverse: true);
     NeuralVoiceEngine.warmUpVoices();
   }
 
   @override
   void dispose() {
-    _ringTimer?.cancel();
-    _callTimer?.cancel();
-    _scriptTimer?.cancel();
-    _cooldownTimer?.cancel();
-    _pulseController.dispose();
     _customSpeechCtrl.dispose();
     _ussdCtrl.dispose();
     _trainSentenceCtrl.dispose();
@@ -1163,134 +961,7 @@ class _MainShellScreenState extends State<MainShellScreen>
   // CALL INTERCEPTION & SPOKEN 2-WAY DIALOGUE ENGINE
   // ==========================================================================
 
-  void _ringIncomingCall(String scenario) {
-    _resetCallState();
-    setState(() {
-      _pendingScenario = scenario;
-      _isRinging = true;
-      if (scenario == 'hospital_scam') {
-        _activeCallerName = 'Unknown Caller';
-        _activeCallerNumber = '+254 724 889 102';
-      } else if (scenario == 'true_hospital') {
-        _activeCallerName = 'Aga Khan Hospital Desk';
-        _activeCallerNumber = '+254 20 374 0000';
-      } else {
-        _activeCallerName = 'Unverified Care Line';
-        _activeCallerNumber = '+254 710 442 991';
-      }
-    });
-
-    NeuralVoiceEngine.playTone(freq: 820, durationMs: 260, type: 'square');
-    _ringTimer?.cancel();
-    _ringTimer = Timer.periodic(const Duration(milliseconds: 1200), (_) {
-      if (!_isRinging) {
-        _ringTimer?.cancel();
-        return;
-      }
-      NeuralVoiceEngine.playTone(freq: 820, durationMs: 260, type: 'square');
-    });
-
-    _addLog(
-      '[INCOMING CALL] Ringing from $_activeCallerNumber ($_activeCallerName).',
-    );
-  }
-
-  void _answerCall() {
-    _ringTimer?.cancel();
-    setState(() {
-      _isRinging = false;
-      _isCallActive = true;
-      _callSeconds = 0;
-      _accumulatedCallText = '';
-      _liveTurns.clear();
-    });
-
-    _callTimer?.cancel();
-    _callTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _callSeconds++);
-    });
-
-    final Map<String, List<DialogueTurn>> dialogues = {
-      'hospital_scam': [
-        const DialogueTurn(
-          speaker: 'Caller',
-          text:
-              'Hello, mzazi! Niko hapa hospitali, kwa emergency. Mtoto wako amepata ajali mbaya, na ameumia!',
-          role: 'caller',
-        ),
-        DialogueTurn(
-          speaker: 'You (${widget.userName})',
-          text:
-              'Mungu wangu! Wacha nimpigie mtoto wangu simu kwanza, nihakikishe.',
-          role: 'user',
-        ),
-        const DialogueTurn(
-          speaker: 'Caller',
-          text:
-              'Hapana, usikate simu na usipigie mtu! Daktari anasema, tuma elfu kumi na tano kwa hii namba binafsi, sasa hivi!',
-          role: 'caller',
-        ),
-      ],
-      'true_hospital': [
-        DialogueTurn(
-          speaker: 'Hospital Desk',
-          text:
-              'Hello, ${widget.userName}. Tunakupigia kutoka Aga Khan Clinic. Kijana wako amepata homa kidogo.',
-          role: 'caller',
-        ),
-        DialogueTurn(
-          speaker: 'You (${widget.userName})',
-          text: 'Je, ni kweli? Nilipe pesa kwa namba gani, ama nije hapo?',
-          role: 'user',
-        ),
-        const DialogueTurn(
-          speaker: 'Hospital Desk',
-          text:
-              'Usitume pesa kwa namba ya mtu binafsi. Unaweza kumpigia mtoto wako uhakikishe, kisha ulipe kwa Official Hospital Paybill ukifika reception.',
-          role: 'caller',
-        ),
-      ],
-      'safaricom_scam': [
-        const DialogueTurn(
-          speaker: 'Caller',
-          text:
-              'Jambo, nakupigia kutoka Safaricom Customer Care. Kuna mwizi anajaribu kufanya, SIM swap, kwa line yako.',
-          role: 'caller',
-        ),
-        DialogueTurn(
-          speaker: 'You (${widget.userName})',
-          text: 'Sasa nifanye nini, ndio line yangu isifungwe?',
-          role: 'user',
-        ),
-        const DialogueTurn(
-          speaker: 'Caller',
-          text:
-              'Tafadhali, bonyeza PIN yako sasa hivi, na usomee ile OTP code imeingia kwa simu yako!',
-          role: 'caller',
-        ),
-      ],
-    };
-
-    final turns = dialogues[_pendingScenario] ?? dialogues['hospital_scam']!;
-    int idx = 0;
-
-    _processDialogueTurn(turns[0]);
-    idx = 1;
-
-    _scriptTimer?.cancel();
-    _scriptTimer = Timer.periodic(const Duration(milliseconds: 6200), (timer) {
-      if (!_isCallActive || idx >= turns.length) {
-        timer.cancel();
-        return;
-      }
-      _processDialogueTurn(turns[idx]);
-      idx++;
-    });
-  }
-
   void _processDialogueTurn(DialogueTurn turn) {
-    NeuralVoiceEngine.speak(turn.text, role: turn.role);
-
     _accumulatedCallText = '$_accumulatedCallText ${turn.text}'.trim();
     final result = _mlModel.predict(_accumulatedCallText);
 
@@ -1315,274 +986,42 @@ class _MainShellScreenState extends State<MainShellScreen>
       '[ML INFERENCE] ${turn.speaker} -> P(Scam)=${result.riskPercentage}% (Logit z=${result.logitScore.toStringAsFixed(2)})',
     );
 
-    if (_riskScore >= 75 && !_isFinancialLocked) {
-      Future.delayed(const Duration(milliseconds: 3800), () {
-        if (!mounted || !_isCallActive) return;
-        _triggerSelectiveFinancialLock(
-          reason:
-              'On-Device ML Classifier detected ${result.riskPercentage}% Scam Probability (${result.verdictExplanation})',
-        );
-      });
+  }
+
+  Future<void> _placeDirectFamilyCall([Guardian? guardian]) async {
+    final target = guardian ?? (_guardians.isEmpty ? null : _guardians.first);
+    if (target == null) return;
+    final uri = Uri(scheme: 'tel', path: target.phone.replaceAll(' ', ''));
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
-  void _triggerSelectiveFinancialLock({required String reason}) {
-    setState(() {
-      _isFinancialLocked = true;
-      _cooldownSeconds = 900;
-    });
-
-    NeuralVoiceEngine.speak(
-      'Attention, ${widget.userName}. Ngao Sauti has detected high-pressure scam manipulation on this call. Outgoing M-Pesa transfers, and SIM swap codes, are paused for your protection. Please call your family directly, or wait for two family guardians to verify.',
-      role: 'ai',
+  Future<void> _messageGuardian(Guardian guardian) async {
+    final uri = Uri(
+      scheme: 'sms',
+      path: guardian.phone.replaceAll(' ', ''),
+      queryParameters: {'body': 'Hi ${guardian.name}, I need to verify something with you.'},
     );
-
-    _cooldownTimer?.cancel();
-    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_cooldownSeconds > 0) setState(() => _cooldownSeconds--);
-    });
-
-    _addLog(
-      '[CIRCUIT BREAKER] $reason Outgoing M-Pesa, *100# & STK frozen. Dispatched 2-of-${_guardians.length} Guardian consensus alert.',
-    );
-
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0F14),
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.gpp_bad, color: Color(0xFFEF4444), size: 26),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Selective Financial Lock Active',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFFCA5A5),
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              reason,
-              style: const TextStyle(fontSize: 13, color: Colors.white70),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF030712),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: const Color(0xFF10B981).withOpacity(0.4),
-                ),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '✓ People First, AI Second — What if this is a TRUE Emergency?',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF10B981),
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    '1. Normal voice calls stay 100% OPEN so you can call your family directly.\n'
-                    '2. Your Family Guardians have been alerted—if the emergency is genuine, 2 taps of "Approve Safe" unlock M-Pesa immediately.',
-                    style: TextStyle(fontSize: 11.5, color: Colors.white70, height: 1.4),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() => _selectedTab = 2);
-            },
-            child: const Text('Guardian Consensus (2-of-N)'),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
-              foregroundColor: Colors.black,
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _placeDirectFamilyCall();
-            },
-            icon: const Icon(Icons.call, size: 16),
-            label: const Text('Call Family Directly'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _placeDirectFamilyCall() {
-    final firstGuardian =
-        _guardians.isNotEmpty ? _guardians.first.name : 'Family Guardian';
-    NeuralVoiceEngine.speak(
-      'Dialing $firstGuardian directly on a verified voice line.',
-      role: 'ai',
-    );
-    _addLog(
-      '[SAFE DIALER] Placed direct verification voice call to $firstGuardian.',
-    );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF065F46),
-        content: Text(
-          'Dialing $firstGuardian... Standard voice calls are never blocked!',
-        ),
-      ),
-    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   void _executeMerchantStkPush() {
-    if (_isFinancialLocked) {
-      NeuralVoiceEngine.speak(
-        'Warning. M-Pesa STK prompt blocked because you are on an unverified high-risk call. Do not enter your PIN.',
-        role: 'ai',
-      );
-      _addLog(
-        '[STK FIREWALL] Intercepted & blocked STK Push PIN prompt during active scam lock.',
-      );
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1A0F14),
-          shape: RoundedRectangleBorder(
-            side: const BorderSide(color: Color(0xFFEF4444)),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          title: const Text(
-            '🛑 STK Push Prompt Intercepted',
-            style: TextStyle(color: Color(0xFFFCA5A5), fontSize: 16),
-          ),
-          content: const Text(
-            'Ngao-Sauti blocked this M-Pesa STK prompt because an active scam threat was detected on your line.\n\nRemember: Entering your M-Pesa PIN always SENDS money out—it never receives or reverses funds.',
-            style: TextStyle(fontSize: 13),
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEF4444),
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Dismiss Fraudulent Prompt'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    NeuralVoiceEngine.speak(
-      'Context verified safe. Merchant STK payment prompt allowed.',
-      role: 'ai',
-    );
-    _addLog(
-      '[CONTEXT-AWARE STK] Allowed legitimate Ksh 1,850 Merchant / Hospital STK Push (Risk is low: $_riskScore%).',
-    );
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF062E22),
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(color: Color(0xFF10B981)),
-          borderRadius: BorderRadius.circular(14),
-        ),
         title: const Text(
-          '✅ SIM Toolkit Payment Allowed',
-          style: TextStyle(color: Color(0xFF10B981), fontSize: 16),
+          'Check payments in your carrier app',
+          style: TextStyle(fontSize: 16),
         ),
         content: const Text(
-          'M-PESA STK Prompt:\nPay Ksh 1,850.00 to VERIFIED MERCHANT / OFFICIAL PAYBILL?\n\n(Context-Aware Check: No coercive call active — payment proceeds seamlessly without annoying the user.)',
+          'Sauti cannot read, approve, or block an M-Pesa STK prompt. Verify the recipient and amount in your carrier app. Never share your PIN or one-time code with a caller.',
           style: TextStyle(fontSize: 13),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
-              foregroundColor: Colors.black,
-            ),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Enter PIN & Confirm'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _runUssdCode() {
-    final code = _ussdCtrl.text.trim();
-    if (_isFinancialLocked) {
-      NeuralVoiceEngine.speak(
-        'USSD execution blocked to prevent unauthorized SIM swap.',
-        role: 'ai',
-      );
-      _addLog('[USSD FIREWALL] Blocked $code execution during active threat.');
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1A0F14),
-          title: Text(
-            '🛑 USSD ($code) Blocked',
-            style: const TextStyle(color: Color(0xFFFCA5A5), fontSize: 16),
-          ),
-          content: Text(
-            'Ngao-Sauti prevented $code from running during an unverified high-risk call to protect against SIM-swap and USSD fund transfers.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Dismiss'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    _addLog('[USSD DIALER] Executed $code normally (Context safe).');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0F172A),
-        title: Text(
-          'Carrier USSD Menu ($code)',
-          style: const TextStyle(color: Color(0xFF06B6D4), fontSize: 15),
-        ),
-        content: const Text(
-          '1. My Account & Airtime Balance\n2. Data & Voice Bundles\n3. M-PESA Services\n4. SIM Management\n\n(USSD works normally when no scam threat is active.)',
-          style: TextStyle(fontSize: 13, height: 1.5),
-        ),
-        actions: [
-          TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Close'),
           ),
@@ -1591,30 +1030,30 @@ class _MainShellScreenState extends State<MainShellScreen>
     );
   }
 
+  Future<void> _runUssdCode() async {
+    final code = _ussdCtrl.text.trim();
+    if (!RegExp(r'^\*[0-9*]+#?$').hasMatch(code)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid USSD code, such as *100#.')),
+      );
+      return;
+    }
+    final uri = Uri(scheme: 'tel', path: code);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   void _resetCallState() {
-    _ringTimer?.cancel();
-    _callTimer?.cancel();
-    _scriptTimer?.cancel();
-    _cooldownTimer?.cancel();
     NeuralVoiceEngine.stopSpeech();
     setState(() {
-      _isRinging = false;
-      _isCallActive = false;
-      _isFinancialLocked = false;
-      _riskScore = 5;
-      _lastLogit = _mlModel.bias;
-      _verdictExplanation =
-          'SAFE CONTEXT: Background auditor armed. Normal payments & USSD allowed.';
+      _riskScore = 0;
+      _lastLogit = 0;
+      _verdictExplanation = 'No text has been analyzed.';
       _lastMatchedWeights = {};
       _accumulatedCallText = '';
-      _activeCallerName = 'Standby';
-      _activeCallerNumber = 'No active call';
       _triggeredCategories.clear();
       _liveTurns.clear();
-      for (final g in _guardians) {
-        g.vote = null;
-        g.status = g.isPrimary ? 'Online' : 'SMS Fallback';
-      }
     });
   }
 
@@ -1646,11 +1085,11 @@ class _MainShellScreenState extends State<MainShellScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'NGAO-SAUTI OS',
+                  'SAUTI',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 0.6),
                 ),
                 Text(
-                  'Protected: ${widget.userName} (${widget.userPhone}) • ML Acc: ${_mlModel.trainingAccuracy.toStringAsFixed(0)}%',
+                  'Safety tools for ${widget.userName}',
                   style: const TextStyle(fontSize: 11, color: Colors.white60),
                 ),
               ],
@@ -1676,39 +1115,6 @@ class _MainShellScreenState extends State<MainShellScreen>
               color: const Color(0xFF06B6D4),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: InkWell(
-              onTap: () =>
-                  setState(() => _isOfflineNoDataMode = !_isOfflineNoDataMode),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF10B981)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _isOfflineNoDataMode ? Icons.airplanemode_active : Icons.wifi,
-                      size: 14,
-                      color: const Color(0xFF10B981),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _isOfflineNoDataMode ? 'ON-DEVICE ML (0 DATA)' : 'HYBRID ML',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF10B981),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
           IconButton(
             tooltip: 'User & Guardian Setup',
             onPressed: widget.onReopenOnboarding,
@@ -1722,24 +1128,19 @@ class _MainShellScreenState extends State<MainShellScreen>
           const SizedBox(width: 6),
         ],
       ),
-      body: Stack(
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
-              child: IndexedStack(
-                index: _selectedTab,
-                children: [
-                  _buildTab1CallAndPaymentShield(),
-                  _buildTab2SmsSpoofGuard(),
-                  _buildTab3GuardianConsensus(approvals, blocks),
-                  _buildTab4MLStudioAndLogs(),
-                ],
-              ),
-            ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: IndexedStack(
+            index: _selectedTab,
+            children: [
+              _buildTab1CallAndPaymentShield(),
+              _buildTab2SmsSpoofGuard(),
+              _buildTab3GuardianConsensus(approvals, blocks),
+              _buildTab4MLStudioAndLogs(),
+            ],
           ),
-          if (_isRinging) _buildAnimatedIncomingCallOverlay(),
-        ],
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         backgroundColor: const Color(0xFF0F172A),
@@ -1757,13 +1158,9 @@ class _MainShellScreenState extends State<MainShellScreen>
             label: 'SMS Reversal Guard',
           ),
           NavigationDestination(
-            icon: Badge(
-              isLabelVisible: _isFinancialLocked,
-              label: const Text('!'),
-              child: const Icon(Icons.group_outlined),
-            ),
+            icon: const Icon(Icons.group_outlined),
             selectedIcon: const Icon(Icons.group, color: Color(0xFF06B6D4)),
-            label: 'Guardians (${_guardians.length})',
+            label: 'Contacts',
           ),
           const NavigationDestination(
             icon: Icon(Icons.psychology_outlined),
@@ -1817,22 +1214,10 @@ class _MainShellScreenState extends State<MainShellScreen>
             ),
             child: Row(
               children: [
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _isCallActive
-                          ? 1.0 + (_pulseController.value * 0.14)
-                          : 1.0,
-                      child: Icon(
-                        _isFinancialLocked
-                            ? Icons.lock_rounded
-                            : Icons.verified_user_rounded,
-                        color: statusColor,
-                        size: 36,
-                      ),
-                    );
-                  },
+                const Icon(
+                  Icons.fact_check_outlined,
+                  color: Color(0xFF06B6D4),
+                  size: 36,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1840,9 +1225,9 @@ class _MainShellScreenState extends State<MainShellScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _isFinancialLocked
-                            ? 'SELECTIVE LOCK ACTIVE: M-PESA & *100# PAUSED (Risk: $_riskScore%)'
-                            : 'SHIELD ARMED: PAYMENTS & USSD ALLOWED (Risk: $_riskScore%)',
+                        _riskScore == 0
+                            ? 'TEXT SCREENING ONLY'
+                            : 'HEURISTIC TEXT RISK: $_riskScore%',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           color: statusColor,
@@ -1854,17 +1239,6 @@ class _MainShellScreenState extends State<MainShellScreen>
                         _verdictExplanation,
                         style: const TextStyle(fontSize: 12.5, color: Colors.white70),
                       ),
-                      if (_isFinancialLocked) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          '⏳ Cooldown Timer: ${(_cooldownSeconds ~/ 60).toString().padLeft(2, '0')}:${(_cooldownSeconds % 60).toString().padLeft(2, '0')} • Waiting for 2-of-${_guardians.length} Family Guardians',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            fontFamily: 'monospace',
-                            color: Colors.amber,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -1873,9 +1247,8 @@ class _MainShellScreenState extends State<MainShellScreen>
           ),
           const SizedBox(height: 18),
 
-          // 2. Call Simulation Scenarios
           const Text(
-            'Incoming Call Scenarios (With Spoken 2-Way Neural Audio)',
+            'Check a message or phrase',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
@@ -1883,42 +1256,6 @@ class _MainShellScreenState extends State<MainShellScreen>
             ),
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _ScenarioCardButton(
-                  title: 'Emergency Coercion Scam',
-                  subtitle: 'Personal Line Demand',
-                  icon: Icons.warning_amber_rounded,
-                  color: const Color(0xFFEF4444),
-                  onTap: () => _ringIncomingCall('hospital_scam'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _ScenarioCardButton(
-                  title: 'Verified Hospital Call',
-                  subtitle: 'Official Paybill Allowed',
-                  icon: Icons.local_hospital_outlined,
-                  color: const Color(0xFF10B981),
-                  onTap: () => _ringIncomingCall('true_hospital'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _ScenarioCardButton(
-                  title: 'Telco SIM-Swap Trap',
-                  subtitle: 'PIN & OTP Harvesting',
-                  icon: Icons.sim_card_alert_outlined,
-                  color: Colors.amber,
-                  onTap: () => _ringIncomingCall('safaricom_scam'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // 3. Live Call Audio & ML Telemetry Console
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -1929,40 +1266,14 @@ class _MainShellScreenState extends State<MainShellScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                const Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _isCallActive ? Icons.graphic_eq : Icons.mic_none,
-                          color: const Color(0xFF06B6D4),
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Live Call Monitor: $_activeCallerName ($_activeCallerNumber)',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13.5,
-                          ),
-                        ),
-                      ],
+                    Icon(Icons.text_snippet_outlined, color: Color(0xFF06B6D4), size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Submitted text checks',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
                     ),
-                    if (_isCallActive)
-                      Row(
-                        children: [
-                          _AnimatedWaveform(controller: _pulseController),
-                          const SizedBox(width: 10),
-                          Text(
-                            '00:${(_callSeconds % 60).toString().padLeft(2, '0')}',
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -2033,7 +1344,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                   child: _liveTurns.isEmpty
                       ? const Center(
                           child: Text(
-                            'Select an incoming call scenario above to hear the live two-way conversation and watch the On-Device ML score each sentence.',
+                            'Paste or type text you want to review. Sauti does not listen to calls or read messages automatically.',
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 12.5, color: Colors.white38),
                           ),
@@ -2113,8 +1424,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                       child: TextField(
                         controller: _customSpeechCtrl,
                         decoration: InputDecoration(
-                          hintText:
-                              'Speak or type live phrase into call (e.g. "Tuma pesa kwa namba binafsi sasa hivi")...',
+                            hintText: 'Paste or type a suspicious message or phrase...',
                           filled: true,
                           fillColor: const Color(0xFF030712),
                           isDense: true,
@@ -2126,9 +1436,9 @@ class _MainShellScreenState extends State<MainShellScreen>
                           if (v.trim().isNotEmpty) {
                             _processDialogueTurn(
                               DialogueTurn(
-                                speaker: 'Live Audio Input',
+                                speaker: 'Submitted text',
                                 text: v.trim(),
-                                role: 'caller',
+                                role: 'user',
                               ),
                             );
                             _customSpeechCtrl.clear();
@@ -2150,16 +1460,16 @@ class _MainShellScreenState extends State<MainShellScreen>
                         if (_customSpeechCtrl.text.trim().isNotEmpty) {
                           _processDialogueTurn(
                             DialogueTurn(
-                              speaker: 'Live Audio Input',
+                              speaker: 'Submitted text',
                               text: _customSpeechCtrl.text.trim(),
-                              role: 'caller',
+                              role: 'user',
                             ),
                           );
                           _customSpeechCtrl.clear();
                         }
                       },
-                      icon: const Icon(Icons.record_voice_over, size: 16),
-                      label: const Text('Speak & Score'),
+                      icon: const Icon(Icons.search, size: 16),
+                      label: const Text('Analyze text'),
                     ),
                   ],
                 ),
@@ -2168,9 +1478,9 @@ class _MainShellScreenState extends State<MainShellScreen>
           ),
           const SizedBox(height: 18),
 
-          // 4. Context-Aware Mobile Money STK & USSD Execution Bar
+          // Carrier actions are handed off to the operating system.
           const Text(
-            'Context-Aware Mobile Money & USSD Verification',
+            'Carrier tools',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
@@ -2198,10 +1508,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                         ),
                         onPressed: _executeMerchantStkPush,
                         icon: const Icon(Icons.payments_outlined, size: 18),
-                        label: const Text(
-                          'Receive Merchant / Paybill STK Prompt',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                        label: const Text('Payment safety advice'),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -2210,13 +1517,13 @@ class _MainShellScreenState extends State<MainShellScreen>
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        onPressed: _placeDirectFamilyCall,
+                        onPressed: () => _placeDirectFamilyCall(),
                         icon: const Icon(
                           Icons.phone_forwarded,
                           size: 18,
                           color: Color(0xFF10B981),
                         ),
-                        label: const Text('Direct Family Call (Always Open)'),
+                        label: const Text('Call first contact'),
                       ),
                     ),
                   ],
@@ -2228,7 +1535,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                       child: TextField(
                         controller: _ussdCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'USSD Code (*100# or *334#)',
+                          labelText: 'Open a USSD code in the dialer',
                           filled: true,
                           fillColor: Color(0xFF030712),
                           border: OutlineInputBorder(),
@@ -2240,7 +1547,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                     ElevatedButton.icon(
                       onPressed: _runUssdCode,
                       icon: const Icon(Icons.dialpad, size: 16),
-                      label: const Text('Execute USSD'),
+                      label: const Text('Open dialer'),
                     ),
                   ],
                 ),
@@ -2263,17 +1570,16 @@ class _MainShellScreenState extends State<MainShellScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'SMS Sender Metadata & Fake M-Pesa Reversal Guard',
+            'Check a suspicious SMS',
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           const Text(
-            'Scammers send fake "Confirmed. You have received..." SMS messages from personal +2547... numbers and immediately call demanding a reversal. Ngao-Sauti inspects the carrier sender token offline.',
+            'Paste the sender label and message text from your inbox. Sauti does not read SMS automatically, and a displayed sender name alone cannot prove who sent a message.',
             style: TextStyle(fontSize: 12.5, color: Colors.white70),
           ),
           const SizedBox(height: 16),
 
-          // Live SMS Injector
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -2285,7 +1591,7 @@ class _MainShellScreenState extends State<MainShellScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Simulate Incoming SMS Message',
+                  'Message details',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 10),
@@ -2296,7 +1602,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                       child: TextField(
                         controller: _smsSenderCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Sender Header (e.g. +254719... or MPESA)',
+                          labelText: 'Sender label or number',
                           filled: true,
                           fillColor: Color(0xFF030712),
                           border: OutlineInputBorder(),
@@ -2310,7 +1616,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                       child: TextField(
                         controller: _smsBodyCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'SMS Body',
+                          labelText: 'Message text',
                           filled: true,
                           fillColor: Color(0xFF030712),
                           border: OutlineInputBorder(),
@@ -2343,7 +1649,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                           );
                         }
                       },
-                      child: const Text('Scan SMS'),
+                      child: const Text('Check message'),
                     ),
                   ],
                 ),
@@ -2403,30 +1709,14 @@ class _MainShellScreenState extends State<MainShellScreen>
                     children: [
                       Text(
                         isSpoof
-                            ? '⚠️ SPOOFED HEADER: Personal number disguising as MPESA'
-                            : '✓ Verified Alphanumeric Carrier MPESA Token',
+                          ? 'Sender is a phone number; verify independently'
+                          : 'Sender label says MPESA; identity is not verified',
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.bold,
                           color: isSpoof ? Colors.amber : const Color(0xFF10B981),
                         ),
                       ),
-                      if (isSpoof)
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFEF4444),
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: () {
-                            setState(() => _riskScore = 96);
-                            _triggerSelectiveFinancialLock(
-                              reason:
-                                  'Spoofed M-Pesa reversal SMS detected from personal number ${sms.sender}.',
-                            );
-                          },
-                          icon: const Icon(Icons.lock, size: 15),
-                          label: const Text('Lock Reversal'),
-                        ),
                     ],
                   ),
                 ],
@@ -2442,7 +1732,7 @@ class _MainShellScreenState extends State<MainShellScreen>
   // TAB 3: 2-OF-N FAMILY GUARDIAN CONSENSUS CIRCLE
   // ==========================================================================
 
-  Widget _buildTab3GuardianConsensus(int approvals, int blocks) {
+  Widget _buildTab3GuardianConsensus() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -2455,11 +1745,11 @@ class _MainShellScreenState extends State<MainShellScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    '2-of-N Family Guardian Consensus Network',
+                    'Trusted contacts',
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Approvals: $approvals / 2  •  Blocks: $blocks / 2',
+                    'Contact them directly to verify urgent requests.',
                     style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF06B6D4),
@@ -2471,31 +1761,6 @@ class _MainShellScreenState extends State<MainShellScreen>
               Wrap(
                 spacing: 8,
                 children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        if (_guardians.isNotEmpty) {
-                          _guardians[0].status = 'Timed Out (90s)';
-                        }
-                        for (final g in _guardians.skip(1)) {
-                          g.status = 'GSM SMS Dispatched';
-                        }
-                      });
-                      NeuralVoiceEngine.speak(
-                        'Primary guardian unreachable after ninety seconds. Escalating via standard GSM SMS to backup guardians.',
-                        role: 'ai',
-                      );
-                      _addLog(
-                        '[90s FAILSAFE] Escalated consensus request via offline GSM SMS.',
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.timer_off_outlined,
-                      size: 16,
-                      color: Colors.amber,
-                    ),
-                    label: const Text('90s SMS Escalation'),
-                  ),
                   ElevatedButton.icon(
                     onPressed: _showAddGuardianModal,
                     icon: const Icon(Icons.person_add_alt_1, size: 16),
@@ -2543,7 +1808,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                '${g.relation} • ${g.status}',
+                                g.relation,
                                 style: const TextStyle(
                                   fontSize: 10.5,
                                   fontFamily: 'monospace',
@@ -2564,38 +1829,16 @@ class _MainShellScreenState extends State<MainShellScreen>
                       ],
                     ),
                   ),
-                  if (g.vote == null)
-                    Row(
-                      children: [
-                        OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFFCA5A5),
-                          ),
-                          onPressed: () => _castGuardianVote(g, 'block'),
-                          child: const Text('Block Scam'),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF10B981),
-                            foregroundColor: Colors.black,
-                          ),
-                          onPressed: () => _castGuardianVote(g, 'approve'),
-                          child: const Text('Approve Safe'),
-                        ),
-                      ],
-                    )
-                  else
-                    Text(
-                      g.vote == 'block' ? '🚫 VOTED BLOCK' : '✅ VOTED SAFE',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'monospace',
-                        color: g.vote == 'block'
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF10B981),
-                      ),
-                    ),
+                  IconButton(
+                    tooltip: 'Call ${g.name}',
+                    onPressed: () => _placeDirectFamilyCall(g),
+                    icon: const Icon(Icons.call_outlined, color: Color(0xFF10B981)),
+                  ),
+                  IconButton(
+                    tooltip: 'Text ${g.name}',
+                    onPressed: () => _messageGuardian(g),
+                    icon: const Icon(Icons.sms_outlined, color: Color(0xFF06B6D4)),
+                  ),
                 ],
               ),
             ),
@@ -2603,98 +1846,9 @@ class _MainShellScreenState extends State<MainShellScreen>
 
           const SizedBox(height: 16),
 
-          // Offline Calm-Voice Safe-Phrase Self-Override
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF1E293B)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'All Guardians Unreachable? (Calm-Voice Safe-Phrase Override)',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Registered Phrase: "${widget.safePhrase}". Unlocks M-Pesa locally once the suspicious call is disconnected and vocal tremor jitter is normal.',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white60,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    _resetCallState();
-                    NeuralVoiceEngine.speak(
-                      'Safe phrase verified with calm vocal cadence. M-Pesa is now unlocked.',
-                      role: 'ai',
-                    );
-                    _addLog(
-                      '[SAFE-PHRASE OVERRIDE] Verified "${widget.safePhrase}". Unlocked.',
-                    );
-                  },
-                  child: const Text('Verify Safe-Phrase'),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  void _castGuardianVote(Guardian g, String vote) {
-    setState(() => g.vote = vote);
-    _addLog('[GUARDIAN VOTE] ${g.name} voted ${vote.toUpperCase()}.');
-
-    final approvals = _guardians.where((x) => x.vote == 'approve').length;
-    final blocks = _guardians.where((x) => x.vote == 'block').length;
-
-    if (blocks >= 2) {
-      NeuralVoiceEngine.speak(
-        'Two family guardians confirmed this is a scam. Caller number permanently blacklisted.',
-        role: 'ai',
-      );
-      _addLog(
-        '🛡️ [2-OF-${_guardians.length} CONSENSUS] Caller $_activeCallerNumber blacklisted.',
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Color(0xFF991B1B),
-          content: Text('2 Guardians Blocked Scam! Caller blacklisted.'),
-        ),
-      );
-    } else if (approvals >= 2) {
-      _resetCallState();
-      NeuralVoiceEngine.speak(
-        'Two family guardians verified the emergency is genuine. M-Pesa and USSD are now unlocked.',
-        role: 'ai',
-      );
-      _addLog(
-        '✅ [2-OF-${_guardians.length} CONSENSUS] Family verified call is genuine. Unlocked.',
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Color(0xFF065F46),
-          content: Text('2 Guardians Approved! M-Pesa & USSD Unlocked.'),
-        ),
-      );
-    }
   }
 
   void _showAddGuardianModal() {
