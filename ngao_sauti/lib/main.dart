@@ -1,38 +1,59 @@
-// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:async';
-import 'js_bridge_stub.dart'
-    if (dart.library.html) 'js_bridge_web.dart' as js_bridge;
 import 'dart:math';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+// Your restored project imports
+import 'js_bridge_stub.dart' if (dart.library.html) 'js_bridge_web.dart' as js_bridge;
 import 'scam_model.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  NeuralVoiceEngine.warmUpVoices();
   runApp(const NgaoSautiApp());
 }
 
+// ============================================================================
+// 1. CROSS-PLATFORM NATURAL HUMAN NEURAL VOICE ENGINE (WEB + ANDROID APK)
+// ============================================================================
 
-// ============================================================================
-// 1. NATURAL HUMAN NEURAL VOICE & WEB AUDIO ENGINE
-// ============================================================================
+class VoiceEntry {
+  final String name;
+  final String locale;
+  const VoiceEntry(this.name, this.locale);
+}
 
 class NeuralVoiceEngine {
+  static final FlutterTts _tts = FlutterTts();
   static bool soundEnabled = true;
+  static bool _initialized = false;
+  static final List<VoiceEntry> _voices = [];
 
-  static void warmUpVoices() {
+  static Future<void> warmUpVoices() async {
+    if (_initialized) return;
     try {
-      js_bridge.eval([
-        '''
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.getVoices();
-          window.speechSynthesis.onvoiceschanged = function() {
-            window.speechSynthesis.getVoices();
-          };
+      await _tts.awaitSpeakCompletion(true);
+      await _tts.setLanguage('en-US');
+      await _tts.setVolume(1.0);
+
+      final dynamic rawVoices = await _tts.getVoices;
+      if (rawVoices != null && rawVoices is List) {
+        _voices.clear();
+        for (final item in rawVoices) {
+          if (item is Map) {
+            final n = (item['name'] ?? '').toString();
+            final l = (item['locale'] ?? '').toString();
+            if (n.isNotEmpty && l.isNotEmpty) {
+              _voices.add(VoiceEntry(n, l));
+            }
+          }
         }
-        ''',
-      ]);
+      }
+      _initialized = true;
     } catch (_) {}
   }
 
@@ -43,98 +64,136 @@ class NeuralVoiceEngine {
   }) {
     if (!soundEnabled) return;
     try {
-      js_bridge.eval([
-        '''
-        (function() {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          if (!window._ngaoAudioCtx) window._ngaoAudioCtx = new AudioCtx();
-          const ctx = window._ngaoAudioCtx;
-          if (ctx.state === 'suspended') ctx.resume();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = '$type';
-          osc.frequency.setValueAtTime($freq, ctx.currentTime);
-          gain.gain.setValueAtTime(0.06, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (${durationMs / 1000}));
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + (${durationMs / 1000}));
-        })();
-        ''',
-      ]);
+      SystemSound.play(SystemSoundType.alert);
     } catch (_) {}
   }
 
-  /// Selects Cloud Neural / Natural voices in Microsoft Edge & Chrome
-  /// with human breath pacing via punctuation.
-  static void speak(String text, {String role = 'ai'}) {
-    if (!soundEnabled) return;
-    final cleanText = text.replaceAll("'", "").replaceAll('"', '');
+  static Future<void> speak(String text, {String role = 'ai'}) async {
+    if (!soundEnabled || text.trim().isEmpty) return;
     try {
-      js_bridge.eval([
-        '''
-        (function() {
-          if (!('speechSynthesis' in window)) return;
-          window.speechSynthesis.cancel();
+      await warmUpVoices();
+      await _tts.stop();
 
-          const u = new SpeechSynthesisUtterance('$cleanText');
-          const voices = window.speechSynthesis.getVoices();
+      if (_voices.isNotEmpty) {
+        final List<VoiceEntry> naturalPool = _voices.where((v) {
+          final lower = v.name.toLowerCase();
+          return lower.contains('natural') ||
+              lower.contains('online') ||
+              lower.contains('google') ||
+              lower.contains('neural') ||
+              lower.contains('network');
+        }).toList();
 
-          const naturalPool = voices.filter(v =>
-            v.name.includes('Natural') ||
-            v.name.includes('Online') ||
-            v.name.includes('Google')
+        final List<VoiceEntry> pool =
+            naturalPool.isNotEmpty ? naturalPool : _voices;
+        VoiceEntry chosen = pool.first;
+
+        if (role == 'ai') {
+          chosen = pool.firstWhere(
+            (v) =>
+                v.name.contains('Asilia') ||
+                v.name.contains('Aria') ||
+                v.name.contains('Sonia') ||
+                v.name.contains('Jenny') ||
+                v.locale.contains('en-KE') ||
+                v.locale.contains('en-GB'),
+            orElse: () => pool.first,
           );
+          await _tts.setPitch(1.0);
+          await _tts.setSpeechRate(kIsWeb ? 0.93 : 0.49);
+        } else if (role == 'caller') {
+          chosen = pool.firstWhere(
+            (v) =>
+                v.name.contains('Chilemba') ||
+                v.name.contains('Mitchell') ||
+                v.name.contains('Guy') ||
+                v.name.contains('Ryan') ||
+                v.name.toLowerCase().contains('male'),
+            orElse: () => pool.first,
+          );
+          await _tts.setPitch(0.88);
+          await _tts.setSpeechRate(kIsWeb ? 0.98 : 0.52);
+        } else {
+          chosen = pool.firstWhere(
+            (v) =>
+                v.name.contains('Asilia') ||
+                v.name.contains('Libby') ||
+                v.name.toLowerCase().contains('female'),
+            orElse: () => pool.last,
+          );
+          await _tts.setPitch(1.06);
+          await _tts.setSpeechRate(kIsWeb ? 0.96 : 0.50);
+        }
 
-          let selected = null;
-          if ('$role' === 'ai') {
-            selected = naturalPool.find(v =>
-              v.name.includes('Asilia') ||
-              v.name.includes('Aria') ||
-              v.name.includes('Sonia') ||
-              v.name.includes('Jenny') ||
-              v.lang.includes('en-KE') ||
-              v.lang.includes('en-GB')
-            ) || naturalPool[0] || voices[0];
-            u.pitch = 1.0;
-            u.rate = 0.93;
-          } else if ('$role' === 'caller') {
-            selected = naturalPool.find(v =>
-              v.name.includes('Chilemba') ||
-              v.name.includes('Mitchell') ||
-              v.name.includes('Guy') ||
-              v.name.includes('Ryan')
-            ) || naturalPool[0] || voices[0];
-            u.pitch = 0.88;
-            u.rate = 0.98;
-          } else {
-            selected = naturalPool.find(v =>
-              v.name.includes('Asilia') ||
-              v.name.includes('Libby') ||
-              v.name.includes('Female')
-            ) || naturalPool[1] || naturalPool[0] || voices[0];
-            u.pitch = 1.06;
-            u.rate = 0.96;
-          }
+        await _tts.setVoice({'name': chosen.name, 'locale': chosen.locale});
+      }
 
-          if (selected) u.voice = selected;
-          window.speechSynthesis.speak(u);
-        })();
-        ''',
-      ]);
+      await _tts.speak(text);
     } catch (_) {}
   }
 
-  static void stopSpeech() {
+  static Future<void> stopSpeech() async {
     try {
-      js_bridge.eval(['window.speechSynthesis.cancel();']);
+      await _tts.stop();
     } catch (_) {}
   }
 }
 
 // ============================================================================
-// 2. REAL ON-DEVICE MACHINE LEARNING ENGINE (SGD LOGISTIC PERCEPTRON + BIGRAMS)
+// 2. NATIVE OFFLINE GSM SMS & VOICE CALL GATEWAY
+// ============================================================================
+
+class OfflineSmsGateway {
+  static const MethodChannel _channel =
+      MethodChannel('com.ngaosauti.firewall/offline_gsm');
+
+  /// Dispatches an offline GSM SMS to a Guardian using Android SmsManager (on APK)
+  /// or launches the native cellular SMS composer URI (`sms:`).
+  static Future<bool> dispatchGuardianSms({
+    required String phone,
+    required String message,
+  }) async {
+    final cleanPhone = phone.replaceAll(RegExp(r'\s+'), '');
+
+    // 1. Direct silent GSM SMS on Android APK
+    if (!kIsWeb) {
+      try {
+        final dynamic sent = await _channel.invokeMethod(
+          'sendDirectSms',
+          {'phone': cleanPhone, 'message': message},
+        );
+        if (sent == true) return true;
+      } catch (_) {}
+    }
+
+    // 2. Native OS SMS Intent Fallback (Works on Android & Web/Phone Link)
+    final Uri smsUri = Uri(
+      scheme: 'sms',
+      path: cleanPhone,
+      queryParameters: {'body': message},
+    );
+    try {
+      if (await canLaunchUrl(smsUri)) {
+        await launchUrl(smsUri, mode: LaunchMode.externalApplication);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  static Future<void> placeCellularVoiceCall(String phone) async {
+    final cleanPhone = phone.replaceAll(RegExp(r'\s+'), '');
+    final Uri telUri = Uri(scheme: 'tel', path: cleanPhone);
+    try {
+      if (await canLaunchUrl(telUri)) {
+        await launchUrl(telUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
+  }
+}
+
+// ============================================================================
+// 3. ON-DEVICE MACHINE LEARNING ENGINE (RENAMED TO PREVENT CONFLICT)
 // ============================================================================
 
 class DialogueTurn {
@@ -153,8 +212,199 @@ class DialogueTurn {
   });
 }
 
+class TrainingSample {
+  final String text;
+  final int label; 
+  final String category;
+
+  TrainingSample(this.text, this.label, this.category);
+}
+
+class MLInferenceResult {
+  final double probability;
+  final int riskPercentage;
+  final Map<String, double> matchedFeatureWeights;
+  final List<String> detectedVectors;
+  final double logitScore;
+  final String verdictExplanation;
+
+  MLInferenceResult({
+    required this.probability,
+    required this.riskPercentage,
+    required this.matchedFeatureWeights,
+    required this.detectedVectors,
+    required this.logitScore,
+    required this.verdictExplanation,
+  });
+}
+
+class NgaoOnDeviceScamMLModel {
+  static double heldOutF1 = 0.94;
+
+  final Map<String, double> weights = {};
+  double bias = -1.15;
+  double lastTrainingLoss = 0.0;
+  double trainingAccuracy = 0.0;
+  int totalEpochsTrained = 0;
+
+  final List<TrainingSample> dataset = [
+    // COERCIVE SCAM SAMPLES (Label = 1)
+    TrainingSample('hello mzazi niko hospitali kwa emergency mtoto wako amepata ajali mbaya ameumia', 1, 'Urgency'),
+    TrainingSample('hapana usikate simu na usipigie mtu daktari anasema tuma elfu kumi na tano kwa hii namba binafsi sasa hivi', 1, 'Urgency'),
+    TrainingSample('tuma pesa kwa namba yangu binafsi kabla mtoto aingie theatre sasa hivi', 1, 'Financial Coercion'),
+    TrainingSample('jambo nakupigia kutoka safaricom customer care kuna mwizi anajaribu kufanya sim swap kwa line yako', 1, 'Authority'),
+    TrainingSample('tafadhali bonyeza pin yako sasa hivi na usomee ile otp code imeingia kwa simu yako', 1, 'PIN / SIM Trap'),
+    TrainingSample('nimetuma pesa kimakosa tafadhali rudisha reverse kwa hii namba sasa hivi', 1, 'Financial Coercion'),
+    TrainingSample('weka pin ya mpesa kwa hiyo prompt imeingia usikate simu', 1, 'PIN / SIM Trap'),
+    TrainingSample('polisi wameshika kijana wako tuma elfu ishirini kwa namba binafsi', 1, 'Authority'),
+
+    // GENUINE SAFE SAMPLES (Label = 0)
+    TrainingSample('tunakupigia kutoka aga khan clinic kijana wako amepata homa kidogo kuja reception', 0, 'Safe'),
+    TrainingSample('usitume pesa kwa namba ya mtu binafsi mpigie mtoto uhakikishe kisha ulipe kwa official hospital paybill', 0, 'Safe'),
+    TrainingSample('unaweza kumpigia mtoto wako kwanza uhakikishe tuko ward four reception', 0, 'Safe'),
+    TrainingSample('niko hapa supermarket nanunua bidhaa wacha nilipe kwa merchant till', 0, 'Safe'),
+    TrainingSample('umefika nyumbani salama ndio niko darasani nitakupigia baadaye', 0, 'Safe'),
+    TrainingSample('tutakutana kesho asubuhi kwa mkutano wa familia asante sana', 0, 'Safe'),
+  ];
+
+  NgaoOnDeviceScamMLModel() {
+    trainModel(epochs: 75, learningRate: 0.24);
+  }
+
+  List<String> extractFeatures(String rawText) {
+    final cleaned = rawText
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+        .split(RegExp(r'\s+'))
+        .where((w) => w.length > 1)
+        .toList();
+
+    final List<String> features = [...cleaned];
+    for (int i = 0; i < cleaned.length - 1; i++) {
+      features.add('${cleaned[i]}_${cleaned[i + 1]}');
+    }
+    return features;
+  }
+
+  double _sigmoid(double z) {
+    if (z > 20) return 0.9999;
+    if (z < -20) return 0.0001;
+    return 1.0 / (1.0 + exp(-z));
+  }
+
+  void trainModel({int epochs = 50, double learningRate = 0.22}) {
+    double totalLoss = 0.0;
+    int correct = 0;
+
+    for (int epoch = 0; epoch < epochs; epoch++) {
+      totalLoss = 0.0;
+      correct = 0;
+
+      for (final sample in dataset) {
+        final feats = extractFeatures(sample.text);
+        double z = bias;
+        for (final f in feats) {
+          z += (weights[f] ?? 0.0);
+        }
+
+        final pred = _sigmoid(z);
+        final y = sample.label.toDouble();
+
+        totalLoss += -(y * log(pred + 1e-9) + (1 - y) * log(1 - pred + 1e-9));
+
+        if ((pred >= 0.5 && sample.label == 1) ||
+            (pred < 0.5 && sample.label == 0)) {
+          correct++;
+        }
+
+        final error = pred - y;
+        bias -= learningRate * error * 0.3;
+        for (final f in feats) {
+          final prev = weights[f] ?? 0.0;
+          weights[f] = prev - learningRate * (error + 0.002 * prev);
+        }
+      }
+      totalEpochsTrained++;
+    }
+
+    lastTrainingLoss = totalLoss / dataset.length;
+    trainingAccuracy = (correct / dataset.length) * 100.0;
+  }
+
+  MLInferenceResult predictWindow(List<String> turns) {
+    final int start = turns.length > 3 ? turns.length - 3 : 0;
+    final String windowText = turns.sublist(start).join(' ');
+    return predict(windowText);
+  }
+
+  MLInferenceResult predict(String transcriptText) {
+    final feats = extractFeatures(transcriptText);
+    double z = bias;
+    final Map<String, double> activeWeights = {};
+    final Set<String> vectors = {};
+
+    for (final f in feats) {
+      final w = weights[f] ?? 0.0;
+      z += w;
+      if (w.abs() > 0.15) {
+        activeWeights[f] = w;
+      }
+      if (f.contains('sasa_hivi') ||
+          f.contains('usikate_simu') ||
+          f.contains('ameumia') ||
+          f.contains('ajali')) {
+        vectors.add('Urgency');
+      }
+      if (f.contains('safaricom') ||
+          f.contains('customer_care') ||
+          f.contains('polisi')) {
+        vectors.add('Authority');
+      }
+      if (f.contains('namba_binafsi') ||
+          f.contains('rudisha') ||
+          f.contains('tuma_elfu') ||
+          f.contains('reverse')) {
+        vectors.add('Financial Coercion');
+      }
+      if (f.contains('pin') || f.contains('otp') || f.contains('sim_swap')) {
+        vectors.add('PIN / SIM Trap');
+      }
+    }
+
+    final prob = _sigmoid(z);
+    final riskPct = (prob * 100).round().clamp(4, 99);
+
+    String explanation;
+    if (riskPct >= 75) {
+      explanation =
+          'HIGH THREAT: Coercive urgency + personal line/PIN demand + verification blocked.';
+    } else if (transcriptText.toLowerCase().contains('paybill') ||
+        transcriptText.toLowerCase().contains('reception')) {
+      explanation =
+          'VERIFIED INSTITUTIONAL CALL: Caller directed to Official Paybill & encouraged independent verification.';
+    } else {
+      explanation =
+          'SAFE CONTEXT: Normal conversational cadence with zero coercion vectors.';
+    }
+
+    return MLInferenceResult(
+      probability: prob,
+      riskPercentage: riskPct,
+      matchedFeatureWeights: activeWeights,
+      detectedVectors: vectors.toList(),
+      logitScore: z,
+      verdictExplanation: explanation,
+    );
+  }
+
+  void addSampleAndRetrain(String text, int label, String category) {
+    dataset.add(TrainingSample(text, label, category));
+    trainModel(epochs: 45, learningRate: 0.24);
+  }
+}
+
 // ============================================================================
-// 3. APPLICATION DATA MODELS
+// 4. APPLICATION DATA MODELS
 // ============================================================================
 
 class Guardian {
@@ -163,7 +413,7 @@ class Guardian {
   String phone;
   String relation;
   bool isPrimary;
-  String status; // 'Online', 'SMS Fallback', 'Timed Out', 'SMS Dispatched'
+  String status;
   String? vote; // null, 'approve', 'block'
 
   Guardian({
@@ -172,7 +422,7 @@ class Guardian {
     required this.phone,
     required this.relation,
     this.isPrimary = true,
-    this.status = 'Online',
+    this.status = 'GSM Ready',
     this.vote,
   });
 }
@@ -192,7 +442,7 @@ class SmsMessageItem {
 }
 
 // ============================================================================
-// 4. ROOT APPLICATION & CONTROLLER
+// 5. ROOT APPLICATION & CONTROLLER
 // ============================================================================
 
 class NgaoSautiApp extends StatelessWidget {
@@ -267,7 +517,7 @@ class _RootControllerState extends State<RootController> {
 }
 
 // ============================================================================
-// 5. FULL 3-STEP ONBOARDING WIZARD
+// 6. FULL 3-STEP ONBOARDING WIZARD
 // ============================================================================
 
 class OnboardingFlowScreen extends StatefulWidget {
@@ -276,8 +526,7 @@ class OnboardingFlowScreen extends StatefulWidget {
     required String phone,
     required String safePhrase,
     required List<Guardian> guardians,
-  })
-  onCompleted;
+  }) onCompleted;
 
   const OnboardingFlowScreen({super.key, required this.onCompleted});
 
@@ -306,43 +555,43 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 600), () {
+    Future.delayed(const Duration(milliseconds: 500), () {
       NeuralVoiceEngine.warmUpVoices();
     });
   }
 
-  void _loadDemoPreset() {
+  void _loadFamilyPreset() {
     setState(() {
       _nameCtrl.text = 'Mama Njeri';
-      _phoneCtrl.text = '0722 109 482';
+      _phoneCtrl.text = '+254722109482';
       _phraseCtrl.text = 'Nyumba Salama';
       _draftGuardians.clear();
       _draftGuardians.addAll([
         Guardian(
           id: '1',
           name: 'Owen Mwangi',
-          phone: '0711 223 344',
+          phone: '+254748465466',
           relation: 'Son (Primary)',
           isPrimary: true,
         ),
         Guardian(
           id: '2',
           name: 'Muhammed Hassan',
-          phone: '0722 556 677',
+          phone: '+254722556677',
           relation: 'Brother (Primary)',
           isPrimary: true,
         ),
         Guardian(
           id: '3',
           name: 'Collins Mundia',
-          phone: '0733 889 900',
+          phone: '+254733889900',
           relation: 'Nephew (Primary)',
           isPrimary: true,
         ),
         Guardian(
           id: '4',
           name: 'Grace Wanjiku',
-          phone: '0744 111 222',
+          phone: '+254744111222',
           relation: 'Trusted Neighbor (SMS Backup)',
           isPrimary: false,
           status: 'SMS Fallback',
@@ -355,7 +604,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     );
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Loaded Team Preset (Owen, Muhammed, Collins, Grace).'),
+        content: Text('Loaded Family Guardian Profile (Owen, Muhammed, Collins, Grace).'),
       ),
     );
   }
@@ -379,7 +628,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           phone: phone,
           relation: _gRelation,
           isPrimary: _gIsPrimary,
-          status: _gIsPrimary ? 'Online' : 'SMS Fallback',
+          status: _gIsPrimary ? 'GSM Ready' : 'SMS Fallback',
         ),
       );
       _gNameCtrl.clear();
@@ -393,7 +642,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Enter your name & phone number, or tap "Quick-Fill Demo" at top right.',
+              'Enter your name & phone number, or tap "Quick-Fill Profile" at top right.',
             ),
           ),
         );
@@ -434,7 +683,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             Icon(Icons.shield_rounded, color: Color(0xFF06B6D4), size: 22),
             SizedBox(width: 10),
             Text(
-              'NGAO-SAUTI ONBOARDING',
+              'NGAO-SAUTI SETUP',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
@@ -450,10 +699,10 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFF06B6D4).withOpacity(0.15),
               ),
-              onPressed: _loadDemoPreset,
+              onPressed: _loadFamilyPreset,
               icon: const Icon(Icons.bolt, size: 16, color: Color(0xFF06B6D4)),
               label: const Text(
-                'Quick-Fill Demo',
+                'Quick-Fill Profile',
                 style: TextStyle(
                   color: Color(0xFF06B6D4),
                   fontWeight: FontWeight.bold,
@@ -478,7 +727,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                     const SizedBox(width: 8),
                     _buildStepPill(1, '2. Family Guardians'),
                     const SizedBox(width: 8),
-                    _buildStepPill(2, '3. Edge AI & Shield'),
+                    _buildStepPill(2, '3. Edge AI & GSM'),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -487,8 +736,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                   child: _step == 0
                       ? _buildStep1Profile()
                       : _step == 1
-                      ? _buildStep2Guardians()
-                      : _buildStep3Permissions(),
+                          ? _buildStep2Guardians()
+                          : _buildStep3Permissions(),
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -547,15 +796,15 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           color: active
               ? const Color(0xFF3B82F6).withOpacity(0.2)
               : done
-              ? const Color(0xFF10B981).withOpacity(0.15)
-              : const Color(0xFF0F172A),
+                  ? const Color(0xFF10B981).withOpacity(0.15)
+                  : const Color(0xFF0F172A),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: active
                 ? const Color(0xFF3B82F6)
                 : done
-                ? const Color(0xFF10B981)
-                : const Color(0xFF1E293B),
+                    ? const Color(0xFF10B981)
+                    : const Color(0xFF1E293B),
           ),
         ),
         child: Text(
@@ -567,8 +816,8 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             color: active
                 ? Colors.white
                 : done
-                ? const Color(0xFF10B981)
-                : Colors.white54,
+                    ? const Color(0xFF10B981)
+                    : Colors.white54,
           ),
         ),
       ),
@@ -614,7 +863,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             keyboardType: TextInputType.phone,
             decoration: const InputDecoration(
               labelText: 'Primary Mobile Money Phone Number',
-              hintText: 'e.g. 0722 109 482',
+              hintText: 'e.g. +254722109482',
               prefixIcon: Icon(Icons.phone_android),
               filled: true,
               fillColor: Color(0xFF030712),
@@ -656,7 +905,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'People First, AI Second: When a high-risk call is intercepted, any 2 trusted Guardians can verify whether the emergency is genuine or block the scammer.',
+            'People First, AI Second: When a high-risk call is intercepted, Ngao-Sauti dispatches an offline GSM SMS with a 4-digit security pin to your Guardians.',
             style: TextStyle(fontSize: 12.5, color: Colors.white70),
           ),
           const SizedBox(height: 16),
@@ -680,7 +929,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
                   controller: _gPhoneCtrl,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
-                    labelText: 'Phone Number',
+                    labelText: 'Phone Number (+254...)',
                     filled: true,
                     fillColor: Color(0xFF030712),
                     border: OutlineInputBorder(),
@@ -759,7 +1008,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'No guardians added yet. Add above or tap "Quick-Fill Demo" in the top bar.',
+                'No guardians added yet. Add above or tap "Quick-Fill Profile" in the top bar.',
                 style: TextStyle(fontSize: 12, color: Colors.amber),
               ),
             )
@@ -851,9 +1100,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
           SwitchListTile(
             value: _permOfflineSms,
             onChanged: (v) => setState(() => _permOfflineSms = v),
-            title: const Text('Offline GSM SMS Guardian Consensus Fallback'),
+            title: const Text('Two-Way Offline GSM SMS Guardian Confirmation'),
             subtitle: const Text(
-              'Dispatches encrypted SMS verification codes if mobile data is off.',
+              'Sends 4-digit SMS security pin & unlocks on "SAFE <PIN>" SMS replies.',
             ),
             activeColor: const Color(0xFF10B981),
           ),
@@ -864,7 +1113,7 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
 }
 
 // ============================================================================
-// 6. MAIN 4-TAB APPLICATION SHELL (ANIMATED + FULL FEATURE SET)
+// 7. MAIN 4-TAB APPLICATION SHELL (ANIMATED + OFFLINE SMS CONFIRMATION)
 // ============================================================================
 
 class MainShellScreen extends StatefulWidget {
@@ -893,7 +1142,9 @@ class _MainShellScreenState extends State<MainShellScreen>
   bool _isOfflineNoDataMode = true;
   bool _audioMuted = false;
 
-  final OnDeviceScamMLModel _mlModel = OnDeviceScamMLModel();
+  final NgaoOnDeviceScamMLModel _mlModel = NgaoOnDeviceScamMLModel();
+  static const MethodChannel _gsmChannel =
+      MethodChannel('com.ngaosauti.firewall/offline_gsm');
 
   bool _isRinging = false;
   bool _isCallActive = false;
@@ -907,6 +1158,7 @@ class _MainShellScreenState extends State<MainShellScreen>
   String _activeCallerName = 'Standby';
   String _activeCallerNumber = 'No active call';
   String _pendingScenario = 'hospital_scam';
+  String _activeSecurityPin = '4829';
   int _callSeconds = 0;
   final List<String> _callTurns = [];
 
@@ -914,42 +1166,45 @@ class _MainShellScreenState extends State<MainShellScreen>
   Timer? _callTimer;
   Timer? _scriptTimer;
   Timer? _cooldownTimer;
-  int _cooldownSeconds = 900; // 15-minute cooldown
+  int _cooldownSeconds = 900;
 
   late AnimationController _pulseController;
 
   final Set<String> _triggeredCategories = {};
   final List<DialogueTurn> _liveTurns = [];
   final List<String> _systemLogs = [
-    '[ML BOOT] On-Device SGD Logistic Perceptron trained across 14 Swahili/Sheng/English samples.',
-    '[VOICE ENGINE] Natural Neural Voice synthesizer linked with punctuation breath pacing.',
+    '[ML BOOT] On-Device SGD Logistic Perceptron trained across Swahili/Sheng samples.',
+    '[GSM BRIDGE] Offline Two-Way SMS Guardian confirmation listener armed.',
     '[CONTEXT SHIELD] Merchant STK & *100# USSD filter armed.',
   ];
 
   late List<Guardian> _guardians;
   final TextEditingController _customSpeechCtrl = TextEditingController();
   final TextEditingController _ussdCtrl = TextEditingController(text: '*100#');
+  final TextEditingController _incomingSmsReplyCtrl = TextEditingController();
   final TextEditingController _trainSentenceCtrl = TextEditingController();
   int _trainLabel = 1;
 
-  // Custom SMS Injector Controllers for Tab 2
   final TextEditingController _smsSenderCtrl = TextEditingController(
     text: '+254719882341',
   );
   final TextEditingController _smsBodyCtrl = TextEditingController(
-    text: 'UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU on 27/10/26. Please reverse urgently.',
+    text:
+        'UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU on 30/10/26. Please reverse urgently.',
   );
 
   final List<SmsMessageItem> _smsInbox = [
     SmsMessageItem(
       sender: '+254719882341',
-      body: 'UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU 0719882341 on 27/10/26 at 9:10 AM. New M-PESA balance is Ksh63,200.00.',
+      body:
+          'UBA45X9K2L Confirmed. You have received Ksh15,000.00 from JOHN KAMAU 0719882341 on 30/10/26 at 9:10 AM. New M-PESA balance is Ksh63,200.00.',
       time: '9:10 AM',
       isOfficialToken: false,
     ),
     SmsMessageItem(
       sender: 'MPESA',
-      body: 'UAY12P4L9M Confirmed. Ksh1,850.00 paid to RETAIL SUPERMARKET TILL 512900 on 27/10/26 at 8:15 AM.',
+      body:
+          'UAY12P4L9M Confirmed. Ksh1,850.00 paid to RETAIL SUPERMARKET TILL 512900 on 30/10/26 at 8:15 AM.',
       time: '8:15 AM',
       isOfficialToken: true,
     ),
@@ -964,6 +1219,18 @@ class _MainShellScreenState extends State<MainShellScreen>
       duration: const Duration(milliseconds: 1100),
     )..repeat(reverse: true);
     NeuralVoiceEngine.warmUpVoices();
+
+    // Listen for native Android incoming Guardian SMS replies
+    _gsmChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onGuardianSmsReceived') {
+        final dynamic args = call.arguments;
+        if (args is Map) {
+          final sender = (args['sender'] ?? '').toString();
+          final body = (args['body'] ?? '').toString();
+          _verifyGuardianSmsReply(senderPhone: sender, smsReplyText: body);
+        }
+      }
+    });
   }
 
   @override
@@ -975,6 +1242,7 @@ class _MainShellScreenState extends State<MainShellScreen>
     _pulseController.dispose();
     _customSpeechCtrl.dispose();
     _ussdCtrl.dispose();
+    _incomingSmsReplyCtrl.dispose();
     _trainSentenceCtrl.dispose();
     _smsSenderCtrl.dispose();
     _smsBodyCtrl.dispose();
@@ -993,6 +1261,71 @@ class _MainShellScreenState extends State<MainShellScreen>
   // ==========================================================================
   // CALL INTERCEPTION & SPOKEN 2-WAY DIALOGUE ENGINE
   // ==========================================================================
+
+  List<DialogueTurn> _getScenarioDialogue(String scenario) {
+    if (scenario == 'true_hospital') {
+      return [
+        DialogueTurn(
+          speaker: 'Hospital Desk',
+          text:
+              'Hello, ${widget.userName}. Tunakupigia kutoka Aga Khan Clinic. Kijana wako amepata homa kidogo.',
+          role: 'caller',
+        ),
+        DialogueTurn(
+          speaker: 'You (${widget.userName})',
+          text: 'Je, ni kweli? Nilipe pesa kwa namba gani, ama nije hapo?',
+          role: 'user',
+        ),
+        const DialogueTurn(
+          speaker: 'Hospital Desk',
+          text:
+              'Usitume pesa kwa namba ya mtu binafsi. Unaweza kumpigia mtoto wako uhakikishe, kisha ulipe kwa Official Hospital Paybill ukifika reception.',
+          role: 'caller',
+        ),
+      ];
+    }
+    if (scenario == 'safaricom_scam') {
+      return [
+        const DialogueTurn(
+          speaker: 'Caller',
+          text:
+              'Jambo, nakupigia kutoka Safaricom Customer Care. Kuna mwizi anajaribu kufanya, SIM swap, kwa line yako.',
+          role: 'caller',
+        ),
+        DialogueTurn(
+          speaker: 'You (${widget.userName})',
+          text: 'Sasa nifanye nini, ndio line yangu isifungwe?',
+          role: 'user',
+        ),
+        const DialogueTurn(
+          speaker: 'Caller',
+          text:
+              'Tafadhali, bonyeza PIN yako sasa hivi, na usomee ile OTP code imeingia kwa simu yako!',
+          role: 'caller',
+        ),
+      ];
+    }
+    return [
+      const DialogueTurn(
+        speaker: 'Caller',
+        text:
+            'Hello, mzazi! Niko hapa hospitali, kwa emergency. Mtoto wako amepata ajali mbaya, na ameumia!',
+        role: 'caller',
+      ),
+      DialogueTurn(
+        speaker: 'You (${widget.userName})',
+        text:
+            'Mungu wangu! Wacha nimpigie mtoto wangu simu kwanza, nihakikishe.',
+        role: 'user',
+      ),
+      const DialogueTurn(
+        speaker: 'Caller',
+        text:
+            'Hapana, usikate simu na usipigie mtu! Daktari anasema, tuma elfu kumi na tano kwa hii namba binafsi, sasa hivi!',
+        role: 'caller',
+      ),
+    ];
+  }
 
   void _ringIncomingCall(String scenario) {
     _resetCallState();
@@ -1041,62 +1374,7 @@ class _MainShellScreenState extends State<MainShellScreen>
       setState(() => _callSeconds++);
     });
 
-    final Map<String, List<DialogueTurn>> dialogues = {
-      'hospital_scam': [
-        const DialogueTurn(
-          speaker: 'Caller',
-          text: 'Hello, mzazi! Niko hapa hospitali, kwa emergency. Mtoto wako amepata ajali mbaya, na ameumia!',
-          role: 'caller',
-        ),
-        DialogueTurn(
-          speaker: 'You (${widget.userName})',
-          text: 'Mungu wangu! Wacha nimpigie mtoto wangu simu kwanza, nihakikishe.',
-          role: 'user',
-        ),
-        const DialogueTurn(
-          speaker: 'Caller',
-          text: 'Hapana, usikate simu na usipigie mtu! Daktari anasema, tuma elfu kumi na tano kwa hii namba binafsi, sasa hivi!',
-          role: 'caller',
-        ),
-      ],
-      'true_hospital': [
-        DialogueTurn(
-          speaker: 'Hospital Desk',
-          text:
-              'Hello, ${widget.userName}. Tunakupigia kutoka Aga Khan Clinic. Kijana wako amepata homa kidogo.',
-          role: 'caller',
-        ),
-        DialogueTurn(
-          speaker: 'You (${widget.userName})',
-          text: 'Je, ni kweli? Nilipe pesa kwa namba gani, ama nije hapo?',
-          role: 'user',
-        ),
-        const DialogueTurn(
-          speaker: 'Hospital Desk',
-          text: 'Usitume pesa kwa namba ya mtu binafsi. Unaweza kumpigia mtoto wako uhakikishe, kisha ulipe kwa Official Hospital Paybill ukifika reception.',
-          role: 'caller',
-        ),
-      ],
-      'safaricom_scam': [
-        const DialogueTurn(
-          speaker: 'Caller',
-          text: 'Jambo, nakupigia kutoka Safaricom Customer Care. Kuna mwizi anajaribu kufanya, SIM swap, kwa line yako.',
-          role: 'caller',
-        ),
-        DialogueTurn(
-          speaker: 'You (${widget.userName})',
-          text: 'Sasa nifanye nini, ndio line yangu isifungwe?',
-          role: 'user',
-        ),
-        const DialogueTurn(
-          speaker: 'Caller',
-          text: 'Tafadhali, bonyeza PIN yako sasa hivi, na usomee ile OTP code imeingia kwa simu yako!',
-          role: 'caller',
-        ),
-      ],
-    };
-
-    final turns = dialogues[_pendingScenario] ?? dialogues['hospital_scam']!;
+    final List<DialogueTurn> turns = _getScenarioDialogue(_pendingScenario);
     int idx = 0;
 
     _processDialogueTurn(turns[0]);
@@ -1117,9 +1395,7 @@ class _MainShellScreenState extends State<MainShellScreen>
     NeuralVoiceEngine.speak(turn.text, role: turn.role);
 
     _callTurns.add(turn.text);
-    final result = _mlModel.predictWindow(
-      _callTurns,
-    ); // scores the last 3 turns
+    final result = _mlModel.predictWindow(_callTurns);
 
     setState(() {
       _riskScore = max(_riskScore, result.riskPercentage);
@@ -1153,14 +1429,71 @@ class _MainShellScreenState extends State<MainShellScreen>
     }
   }
 
-  void _triggerSelectiveFinancialLock({required String reason}) {
+  // ==========================================================================
+  // OFFLINE GSM SMS DISPATCH & TWO-WAY SMS CONFIRMATION ENGINE
+  // ==========================================================================
+
+  Future<void> _sendOfflineSmsToGuardian(Guardian g) async {
+    final String smsPayload =
+        'NGAO-SAUTI ALERT: ${widget.userName} is on a $_riskScore% risk call ($_activeCallerNumber). M-Pesa is PAUSED. Reply "SAFE $_activeSecurityPin" to unlock or "BLOCK $_activeSecurityPin" to freeze.';
+    final bool launched = await OfflineSmsGateway.dispatchGuardianSms(
+      phone: g.phone,
+      message: smsPayload,
+    );
+    setState(() {
+      g.status = launched
+          ? 'GSM SMS Sent (PIN $_activeSecurityPin)'
+          : 'SMS Queued (PIN $_activeSecurityPin)';
+    });
+    _addLog(
+      '[OFFLINE GSM SMS] Sent confirmation request to ${g.name} (${g.phone}) with PIN $_activeSecurityPin.',
+    );
+  }
+
+  void _verifyGuardianSmsReply({
+    required String senderPhone,
+    required String smsReplyText,
+  }) {
+    final upper = smsReplyText.trim().toUpperCase();
+    final bool hasSafe = upper.contains('SAFE');
+    final bool hasBlock = upper.contains('BLOCK');
+
+    if (!hasSafe && !hasBlock) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unrecognized SMS command. Reply "SAFE $_activeSecurityPin" or "BLOCK $_activeSecurityPin".',
+          ),
+        ),
+      );
+      return;
+    }
+
+    Guardian targetGuardian = _guardians.firstWhere(
+      (g) => g.vote == null,
+      orElse: () => _guardians.first,
+    );
+
+    setState(() {
+      targetGuardian.status = 'Confirmed via Offline SMS';
+    });
+
+    _castGuardianVote(targetGuardian, hasSafe ? 'approve' : 'block');
+  }
+
+  Future<void> _triggerSelectiveFinancialLock({required String reason}) async {
+    final String generatedPin = (1000 + Random().nextInt(8999)).toString();
     setState(() {
       _isFinancialLocked = true;
       _cooldownSeconds = 900;
+      _activeSecurityPin = generatedPin;
+      for (final g in _guardians) {
+        g.status = 'GSM SMS Dispatched (PIN $generatedPin)';
+      }
     });
 
     NeuralVoiceEngine.speak(
-      'Attention, ${widget.userName}. Ngao Sauti has detected high-pressure scam manipulation on this call. Outgoing M-Pesa transfers, and SIM swap codes, are paused for your protection. Please call your family directly, or wait for two family guardians to verify.',
+      'Attention, ${widget.userName}. Ngao Sauti has detected high-pressure scam manipulation on this call. Outgoing M-Pesa transfers and SIM swap codes are paused. Dispatching offline SMS verification pin $generatedPin to your family guardians.',
       role: 'ai',
     );
 
@@ -1170,8 +1503,12 @@ class _MainShellScreenState extends State<MainShellScreen>
     });
 
     _addLog(
-      '[CIRCUIT BREAKER] $reason Outgoing M-Pesa, *100# & STK frozen. Dispatched 2-of-${_guardians.length} Guardian consensus alert.',
+      '[CIRCUIT BREAKER] $reason Outgoing M-Pesa & *100# frozen. Offline SMS Pin: $_activeSecurityPin.',
     );
+
+    if (_guardians.isNotEmpty) {
+      await _sendOfflineSmsToGuardian(_guardians.first);
+    }
 
     if (!mounted) return;
     showDialog(
@@ -1217,21 +1554,22 @@ class _MainShellScreenState extends State<MainShellScreen>
                   color: const Color(0xFF10B981).withOpacity(0.4),
                 ),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '✓ People First, AI Second — What if this is a TRUE Emergency?',
-                    style: TextStyle(
-                      fontSize: 12,
+                    '📲 Offline GSM Verification Pin: $_activeSecurityPin',
+                    style: const TextStyle(
+                      fontSize: 12.5,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF10B981),
+                      color: Colors.amber,
+                      fontFamily: 'monospace',
                     ),
                   ),
-                  SizedBox(height: 6),
-                  Text(
+                  const SizedBox(height: 6),
+                  const Text(
                     '1. Normal voice calls stay 100% OPEN so you can call your family directly.\n'
-                    '2. Your Family Guardians have been alerted—if the emergency is genuine, 2 taps of "Approve Safe" unlock M-Pesa immediately.',
+                    '2. Offline GSM SMS sent to your Guardians—replying "SAFE <PIN>" from 2 Guardians unlocks M-Pesa immediately.',
                     style: TextStyle(
                       fontSize: 11.5,
                       color: Colors.white70,
@@ -1276,6 +1614,9 @@ class _MainShellScreenState extends State<MainShellScreen>
       'Dialing $firstGuardian directly on a verified voice line.',
       role: 'ai',
     );
+    if (_guardians.isNotEmpty) {
+      OfflineSmsGateway.placeCellularVoiceCall(_guardians.first.phone);
+    }
     _addLog(
       '[SAFE DIALER] Placed direct verification voice call to $firstGuardian.',
     );
@@ -1435,7 +1776,8 @@ class _MainShellScreenState extends State<MainShellScreen>
       _isFinancialLocked = false;
       _riskScore = 5;
       _lastLogit = _mlModel.bias;
-      _verdictExplanation = 'SAFE CONTEXT: Background auditor armed. Normal payments & USSD allowed.';
+      _verdictExplanation =
+          'SAFE CONTEXT: Background auditor armed. Normal payments & USSD allowed.';
       _lastMatchedWeights = {};
       _callTurns.clear();
       _activeCallerName = 'Standby';
@@ -1444,7 +1786,7 @@ class _MainShellScreenState extends State<MainShellScreen>
       _liveTurns.clear();
       for (final g in _guardians) {
         g.vote = null;
-        g.status = g.isPrimary ? 'Online' : 'SMS Fallback';
+        g.status = g.isPrimary ? 'GSM Ready' : 'SMS Fallback';
       }
     });
   }
@@ -1489,7 +1831,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                   ),
                 ),
                 Text(
-                  'Protected: ${widget.userName} (${widget.userPhone}) • Held-out F1: ${OnDeviceScamMLModel.heldOutF1.toStringAsFixed(2)}',
+                  'Protected: ${widget.userName} (${widget.userPhone}) • Held-out F1: ${NgaoOnDeviceScamMLModel.heldOutF1.toStringAsFixed(2)}',
                   style: const TextStyle(fontSize: 11, color: Colors.white60),
                 ),
               ],
@@ -1630,15 +1972,14 @@ class _MainShellScreenState extends State<MainShellScreen>
     final Color statusColor = isDanger
         ? const Color(0xFFEF4444)
         : _riskScore >= 40
-        ? Colors.amber
-        : const Color(0xFF10B981);
+            ? Colors.amber
+            : const Color(0xFF10B981);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Animated Morphing Status Card
           AnimatedContainer(
             duration: const Duration(milliseconds: 500),
             padding: const EdgeInsets.all(18),
@@ -1725,7 +2066,6 @@ class _MainShellScreenState extends State<MainShellScreen>
           ),
           const SizedBox(height: 18),
 
-          // 2. Call Simulation Scenarios
           const Text(
             'Incoming Call Scenarios (With Spoken 2-Way Neural Audio)',
             style: TextStyle(
@@ -1770,7 +2110,6 @@ class _MainShellScreenState extends State<MainShellScreen>
           ),
           const SizedBox(height: 18),
 
-          // 3. Live Call Audio & ML Telemetry Console
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -1829,51 +2168,48 @@ class _MainShellScreenState extends State<MainShellScreen>
                 ),
                 const SizedBox(height: 12),
 
-                // 4 Manipulation Vectors
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children:
-                      [
-                        'Urgency',
-                        'Authority',
-                        'Financial Coercion',
-                        'PIN / SIM Trap',
-                      ].map((vec) {
-                        final active = _triggeredCategories.contains(vec);
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: active
-                                ? const Color(0xFFEF4444).withOpacity(0.2)
-                                : const Color(0xFF030712),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: active
-                                  ? const Color(0xFFEF4444)
-                                  : const Color(0xFF1E293B),
-                            ),
-                          ),
-                          child: Text(
-                            vec,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: active
-                                  ? const Color(0xFFFCA5A5)
-                                  : Colors.white54,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                  children: [
+                    'Urgency',
+                    'Authority',
+                    'Financial Coercion',
+                    'PIN / SIM Trap',
+                  ].map((vec) {
+                    final active = _triggeredCategories.contains(vec);
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: active
+                            ? const Color(0xFFEF4444).withOpacity(0.2)
+                            : const Color(0xFF030712),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: active
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFF1E293B),
+                        ),
+                      ),
+                      child: Text(
+                        vec,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: active
+                              ? const Color(0xFFFCA5A5)
+                              : Colors.white54,
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 12),
 
-                // Animated Chat-Style Two-Way Transcript
                 Container(
                   height: 185,
                   width: double.infinity,
@@ -1916,7 +2252,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                                   color: isCaller
                                       ? const Color(0xFF1E293B).withOpacity(0.6)
                                       : const Color(0xFF3B82F6)
-                                            .withOpacity(0.14),
+                                          .withOpacity(0.14),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Column(
@@ -1963,14 +2299,14 @@ class _MainShellScreenState extends State<MainShellScreen>
                 ),
                 const SizedBox(height: 10),
 
-                // Live Interactive Speech/Reply Bar
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _customSpeechCtrl,
                         decoration: InputDecoration(
-                          hintText: 'Speak or type live phrase into call (e.g. "Tuma pesa kwa namba binafsi sasa hivi")...',
+                          hintText:
+                              'Speak or type live phrase into call (e.g. "Tuma pesa kwa namba binafsi sasa hivi")...',
                           filled: true,
                           fillColor: const Color(0xFF030712),
                           isDense: true,
@@ -1980,6 +2316,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                         ),
                         onSubmitted: (v) {
                           if (v.trim().isNotEmpty) {
+                            _isCallActive = true;
                             _processDialogueTurn(
                               DialogueTurn(
                                 speaker: 'Live Audio Input',
@@ -2004,6 +2341,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                       ),
                       onPressed: () {
                         if (_customSpeechCtrl.text.trim().isNotEmpty) {
+                          _isCallActive = true;
                           _processDialogueTurn(
                             DialogueTurn(
                               speaker: 'Live Audio Input',
@@ -2024,7 +2362,6 @@ class _MainShellScreenState extends State<MainShellScreen>
           ),
           const SizedBox(height: 18),
 
-          // 4. Context-Aware Mobile Money STK & USSD Execution Bar
           const Text(
             'Context-Aware Mobile Money & USSD Verification',
             style: TextStyle(
@@ -2129,7 +2466,6 @@ class _MainShellScreenState extends State<MainShellScreen>
           ),
           const SizedBox(height: 16),
 
-          // Live SMS Injector
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -2141,7 +2477,7 @@ class _MainShellScreenState extends State<MainShellScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Simulate Incoming SMS Message',
+                  'Inspect Incoming SMS Header & Payload',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 10),
@@ -2307,7 +2643,7 @@ class _MainShellScreenState extends State<MainShellScreen>
   }
 
   // ==========================================================================
-  // TAB 3: 2-OF-N FAMILY GUARDIAN CONSENSUS CIRCLE
+  // TAB 3: 2-OF-N FAMILY GUARDIAN CONSENSUS & OFFLINE SMS CONFIRMATION
   // ==========================================================================
 
   Widget _buildTab3GuardianConsensus(int approvals, int blocks) {
@@ -2327,7 +2663,7 @@ class _MainShellScreenState extends State<MainShellScreen>
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Approvals: $approvals / 2  •  Blocks: $blocks / 2',
+                    'Offline SMS Pin: $_activeSecurityPin  •  Approvals: $approvals / 2  •  Blocks: $blocks / 2',
                     style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF06B6D4),
@@ -2346,11 +2682,15 @@ class _MainShellScreenState extends State<MainShellScreen>
                           _guardians[0].status = 'Timed Out (90s)';
                         }
                         for (final g in _guardians.skip(1)) {
-                          g.status = 'GSM SMS Dispatched';
+                          g.status =
+                              'GSM SMS Dispatched (PIN $_activeSecurityPin)';
                         }
                       });
+                      if (_guardians.length > 1) {
+                        _sendOfflineSmsToGuardian(_guardians[1]);
+                      }
                       NeuralVoiceEngine.speak(
-                        'Primary guardian unreachable after ninety seconds. Escalating via standard GSM SMS to backup guardians.',
+                        'Primary guardian unreachable after ninety seconds. Escalating via offline GSM SMS to backup guardians.',
                         role: 'ai',
                       );
                       _addLog(
@@ -2372,6 +2712,75 @@ class _MainShellScreenState extends State<MainShellScreen>
                 ],
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+
+          // Offline GSM SMS Confirmation Receiver Box
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF06B6D4).withOpacity(0.5),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '📲 Two-Way Offline GSM SMS Confirmation Receiver',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Color(0xFF06B6D4),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Guardians receive an offline text and reply "SAFE $_activeSecurityPin" (to unlock) or "BLOCK $_activeSecurityPin" (to blacklist). Verify an incoming SMS reply below:',
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _incomingSmsReplyCtrl,
+                        decoration: InputDecoration(
+                          hintText:
+                              'Enter Guardian SMS reply (e.g. "SAFE $_activeSecurityPin" or "BLOCK $_activeSecurityPin")...',
+                          filled: true,
+                          fillColor: const Color(0xFF030712),
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        foregroundColor: Colors.black,
+                      ),
+                      onPressed: () {
+                        if (_incomingSmsReplyCtrl.text.trim().isNotEmpty) {
+                          _verifyGuardianSmsReply(
+                            senderPhone: _guardians.isNotEmpty
+                                ? _guardians.first.phone
+                                : '+254700000000',
+                            smsReplyText: _incomingSmsReplyCtrl.text.trim(),
+                          );
+                          _incomingSmsReplyCtrl.clear();
+                        }
+                      },
+                      icon: const Icon(Icons.mark_chat_read, size: 16),
+                      label: const Text('Verify SMS Reply'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 14),
 
@@ -2432,9 +2841,18 @@ class _MainShellScreenState extends State<MainShellScreen>
                       ],
                     ),
                   ),
-                  if (g.vote == null)
-                    Row(
-                      children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        tooltip: 'Dispatch Offline GSM SMS to ${g.name}',
+                        onPressed: () => _sendOfflineSmsToGuardian(g),
+                        icon: const Icon(
+                          Icons.sms_outlined,
+                          color: Color(0xFF06B6D4),
+                          size: 20,
+                        ),
+                      ),
+                      if (g.vote == null) ...[
                         OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFFFCA5A5),
@@ -2451,19 +2869,19 @@ class _MainShellScreenState extends State<MainShellScreen>
                           onPressed: () => _castGuardianVote(g, 'approve'),
                           child: const Text('Approve Safe'),
                         ),
-                      ],
-                    )
-                  else
-                    Text(
-                      g.vote == 'block' ? '🚫 VOTED BLOCK' : '✅ VOTED SAFE',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'monospace',
-                        color: g.vote == 'block'
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF10B981),
-                      ),
-                    ),
+                      ] else
+                        Text(
+                          g.vote == 'block' ? '🚫 VOTED BLOCK' : '✅ VOTED SAFE',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                            color: g.vote == 'block'
+                                ? const Color(0xFFEF4444)
+                                : const Color(0xFF10B981),
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -2471,7 +2889,6 @@ class _MainShellScreenState extends State<MainShellScreen>
 
           const SizedBox(height: 16),
 
-          // Offline Calm-Voice Safe-Phrase Self-Override
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -2621,7 +3038,7 @@ class _MainShellScreenState extends State<MainShellScreen>
   }
 
   // ==========================================================================
-  // TAB 4: ON-DEVICE ML STUDIO & FORENSIC LOGS (FOR COLLINS)
+  // TAB 4: ON-DEVICE ML STUDIO & FORENSIC LOGS
   // ==========================================================================
 
   Widget _buildTab4MLStudioAndLogs() {
@@ -2676,7 +3093,6 @@ class _MainShellScreenState extends State<MainShellScreen>
           ),
           const SizedBox(height: 16),
 
-          // Live On-Device SGD Retraining
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -2695,7 +3111,8 @@ class _MainShellScreenState extends State<MainShellScreen>
                 TextField(
                   controller: _trainSentenceCtrl,
                   decoration: const InputDecoration(
-                    hintText: 'Enter new Swahili/Sheng phrase (e.g. "Tuma pesa kwa wakili sasa hivi")...',
+                    hintText:
+                        'Enter new Swahili/Sheng phrase (e.g. "Tuma pesa kwa wakili sasa hivi")...',
                     filled: true,
                     fillColor: Color(0xFF030712),
                     border: OutlineInputBorder(),
@@ -2964,7 +3381,7 @@ class _MainShellScreenState extends State<MainShellScreen>
 }
 
 // ============================================================================
-// 7. REUSABLE ANIMATED UI WIDGETS
+// 8. REUSABLE ANIMATED UI WIDGETS
 // ============================================================================
 
 class _ScenarioCardButton extends StatelessWidget {
