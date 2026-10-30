@@ -1,0 +1,383 @@
+text,label,category
+Samahani nimekutumia pesa kimakosa elfu tano tafadhali nirudishie kwa hii namba,1,mpesa_reversal
+"Habari, nimetuma pesa kwa number yako by mistake, tafadhali reverse haraka niko hospitali",1,mpesa_reversal
+Hello bro nimekutumia ksh 3000 wrong number tafadhali irudishe sasa,1,mpesa_reversal
+"Please return the money I sent you by mistake, I am begging you, it was for my sick mother",1,mpesa_reversal
+"Nimekosea number, pesa ni ya kulipia bili ya umeme, rudisha tafadhali leo",1,mpesa_reversal
+"Nimetuma elfu kumi kwa makosa, kama hutarudisha nitaripoti polisi",1,mpesa_reversal
+"Mpesa yangu imeingia kwa simu yako kimakosa, nirudishie kabla ya saa moja",1,mpesa_reversal
+"Sorry I sent you Ksh 7,500 by mistake, kindly send it back to this number, I will send you airtime for your trouble",1,mpesa_reversal
+"Umepokea pesa yangu kimakosa, tuma back kwa hii namba mpya ya mtu wangu",1,mpesa_reversal
+"Boss nimekutumia hela ya mtu kwa makosa, nirudishie fasta sitaki shida",1,mpesa_reversal
+"Nimetuma pesa ya ada kwa namba yako nikikosea, tafadhali nirudishie hata nusu",1,mpesa_reversal
+"Hallo, I accidentally sent you money, please check your messages and send it back immediately",1,mpesa_reversal
+"Pesa niliyokutumia ni ya mtu mgonjwa, tafadhali rudisha sasa hivi nakuomba",1,mpesa_reversal
+"Ulipokea ujumbe wa mpesa kutoka kwangu? hiyo pesa si yako, tuma back kwa namba hii",1,mpesa_reversal
+"Nimeingiza pesa kwa line yako kimakosa, ukiitumia nitakushtaki, rudisha sasa",1,mpesa_reversal
+"Jambo, nakupigia kutoka Safaricom, tunahitaji PIN yako ya Mpesa kuthibitisha akaunti yako",1,fake_agent_pin_otp
+"Hello this is Equity Bank security, your account has suspicious activity, please read me the OTP we just sent",1,fake_agent_pin_otp
+"Habari mteja, KCB hapa, kuna msimbo umetumwa kwa simu yako tafadhali tusomee ili tuzuie wizi",1,fake_agent_pin_otp
+"Your M-Pesa account will be suspended in one hour, press your PIN to verify now",1,fake_agent_pin_otp
+Tafadhali tupe nambari yako ya kitambulisho na PIN ili tusasishe line yako,1,fake_agent_pin_otp
+"Safaricom customer care hapa, line yako itafungwa leo kama hutatuma PIN yako kuthibitisha",1,fake_agent_pin_otp
+"Tumegundua mtu anajaribu kuingia akaunti yako ya benki, tuambie OTP ili tumzuie",1,fake_agent_pin_otp
+"This is Co-operative Bank fraud desk, to cancel the fraudulent transaction please confirm your PIN and the code on your phone",1,fake_agent_pin_otp
+"Mpesa imesasishwa, tafadhali weka PIN yako kwenye prompt itakayokuja uthibitishe usajili",1,fake_agent_pin_otp
+"Mimi ni afisa wa Airtel Money, tunahitaji nambari ya siri yako kurudisha pesa zako zilizokwama",1,fake_agent_pin_otp
+"Ukitaka kuhifadhi akaunti yako ya Mpesa, tuma code uliyopokea kwa SMS kwa hii namba",1,fake_agent_pin_otp
+"Dear customer your Fuliza limit has been increased, give your PIN to activate it now",1,fake_agent_pin_otp
+"Karibu ndugu, nakupigia kutoka benki yako, kuna hitilafu kwa kadi yako, nipe nambari ya siri ya ATM",1,fake_agent_pin_otp
+"Usikate simu, tunapanga akaunti yako, soma namba ya uthibitisho iliyokuja",1,fake_agent_pin_otp
+"Customer care hapa, tunakurudishia pesa yako ya promotion, tupe PIN yako ya mpesa tuiweke",1,fake_agent_pin_otp
+"Mzazi mtoto wako amepata ajali, yuko theatre, tuma elfu ishirini kwa namba hii sasa hivi",1,emergency_coercion
+"Hospitali hapa, daktari anasema lazima utume pesa kwa namba binafsi kabla hawajaanza operesheni, usikate simu",1,emergency_coercion
+"Wewe ni mama wa John? ameshikwa na polisi, tuma elfu kumi na tano kwa afisa huyu ili aachiliwe",1,emergency_coercion
+Dad it's me I have been arrested please don't tell anybody just send money to this number now,1,emergency_coercion
+"Mama nimepata ajali niko hospitali, simu yangu imeharibika, tuma pesa kwa namba ya daktari haraka",1,emergency_coercion
+"Usiseme kwa mtu yeyote, mtoto wako ametekwa, tuma pesa sasa hivi la sivyo tutamdhuru",1,emergency_coercion
+"Mimi ni inspekta wa polisi, mwanao amekamatwa na bangi, lipa dhamana kwa mpesa kwa namba hii sasa",1,emergency_coercion
+"Your son has been in an accident, the doctor needs payment immediately on this personal number before treatment",1,emergency_coercion
+"Hakuna wakati, ndugu yako amelazwa ICU, tuma elfu thelathini kwa nambari hii, usimpigie mtu",1,emergency_coercion
+"Mtoto wako ameanguka shuleni, yuko kwa gari la wagonjwa, tuma pesa ya mafuta kwa dereva sasa",1,emergency_coercion
+"Dada yako amepata ajali Thika Road, tuma elfu tano kwa huyu mtu wa msaada haraka usikate",1,emergency_coercion
+"Mama usipige mtu, nimekamatwa na polisi, tuma elfu ishirini kwa namba hii nitakueleza baadaye",1,emergency_coercion
+"Kenyatta Hospital hapa, mgonjwa wako atakufa kama hutatuma pesa ya dawa sasa kwa namba hii",1,emergency_coercion
+"Mwanao amegongwa na gari, dereva anataka kulipwa pesa sasa hivi kwa mpesa ama aende polisi",1,emergency_coercion
+"Don't hang up and don't call anyone, your husband is in surgery, send the deposit to my number right now",1,emergency_coercion
+"Tuna kazi Dubai, mshahara milioni moja, lipa elfu kumi na mbili ya visa kwa mpesa leo",1,job_visa_loan_fee
+"Umechaguliwa kwa mkopo wa laki mbili, lipa ada ya processing elfu mbili kwanza",1,job_visa_loan_fee
+"Congratulations your loan of Ksh 100,000 is approved, send Ksh 3,000 insurance fee to receive it",1,job_visa_loan_fee
+"Kazi ya kuosha magari Canada ipo, tuma elfu ishirini ya ndege na mafunzo kwa namba hii",1,job_visa_loan_fee
+"Hustler Fund imekuidhinisha mkopo mkubwa, lipa ada ya uthibitisho kwa mpesa kwanza",1,job_visa_loan_fee
+"Ajira za serikali zimetoka, lipa elfu tano ya usajili tukuhakikishie nafasi yako",1,job_visa_loan_fee
+"Mkopo wako uko tayari, tuma elfu moja ya kufungua akaunti halafu pesa itaingia",1,job_visa_loan_fee
+"Job offer in Qatar, you must pay the medical and visa fee first to this till number today",1,job_visa_loan_fee
+"Tumekupa scholarship ya ng'ambo, lipa ada ya application elfu nane leo la sivyo nafasi itaenda",1,job_visa_loan_fee
+"Mkopo wa haraka bila CRB, tuma dhamana ya elfu nne kwa mpesa kisha upokee laki tatu",1,job_visa_loan_fee
+"Pay a refundable registration fee of Ksh 2,500 to secure your teaching job at the ministry",1,job_visa_loan_fee
+"Nafasi ya kazi ya kuuza simu kwa kampuni, lipa elfu tatu ya sare na ID kabla ya kuanza",1,job_visa_loan_fee
+"Kazi ya mgodi Saudi, malipo mazuri, lipa nusu ya gharama ya safari kwa mpesa leo",1,job_visa_loan_fee
+"Umeshinda tender, lipa elfu kumi na tano ya leseni ndio tukupe mkataba",1,job_visa_loan_fee
+"Loan officer hapa, your loan is approved, deposit the processing fee on this number before 5pm",1,job_visa_loan_fee
+"Hongera umeshinda milioni mbili kwenye promosheni ya Safaricom, tuma elfu tano ya kodi kupokea zawadi",1,prize_promo
+"Congratulations you won a Toyota in our Mpesa lucky draw, pay Ksh 5,000 delivery fee to claim",1,prize_promo
+"Umechaguliwa mshindi wa bahati nasibu, tupe namba yako ya mpesa na PIN upokee zawadi yako",1,prize_promo
+"Umeshinda simu mpya ya iPhone, lipa elfu mbili ya usafirishaji kwa namba hii",1,prize_promo
+"Kampuni ya betting inakupa bonus ya elfu hamsini, tuma elfu moja ya kuthibitisha akaunti kwanza",1,prize_promo
+"You have won Ksh 500,000 in the Safaricom Jackpot, call this number and send tax before payout",1,prize_promo
+"Zawadi yako ya gari iko tayari, lipa ada ya usajili kwa mpesa leo tu",1,prize_promo
+"Bahati nasibu ya Airtel imekuchagua, tuma elfu tatu ya ushuru upate milioni",1,prize_promo
+Mshindi wa pesa tafadhali jibu na namba yako ya siri ili tuweke pesa kwenye simu yako,1,prize_promo
+"Free data for life, click the link and enter your Mpesa PIN to claim your bonus",1,prize_promo
+"Umepata bonus ya mpesa ya elfu kumi, weka PIN yako kuthibitisha na pesa itaingia",1,prize_promo
+"Your number was picked for a cash giveaway, just pay the small processing fee of Ksh 1,000",1,prize_promo
+"Hongera, mshindi wa shilingi laki tano, tuma pesa ya ada ya kutuma kwa namba hii haraka",1,prize_promo
+"Redio imekuchagua kushinda televisheni, tuma elfu mbili ya kusafirisha kwa namba binafsi",1,prize_promo
+"Habari, mimi ni afisa wa KRA, una deni la ushuru, lipa elfu nane leo kwa namba hii ama utashtakiwa",1,govt_kra_ntsa
+"NTSA hapa, gari lako lina faini ya elfu tano, lipa kwa mpesa sasa kuepuka kukamatwa",1,govt_kra_ntsa
+"This is KRA enforcement, your account is flagged for unpaid tax, pay Ksh 12,000 now to avoid arrest",1,govt_kra_ntsa
+"Nakupigia kutoka DCI, kuna kesi dhidi yako, lipa dhamana elfu kumi kwa namba hii sasa",1,govt_kra_ntsa
+"Huduma Namba yako imesitishwa, tuma elfu mbili kwa mpesa ili kuiwezesha tena",1,govt_kra_ntsa
+"Faini ya trafiki ya elfu tatu imekuja kwa simu yako, lipa kwa namba binafsi ya afisa leo",1,govt_kra_ntsa
+Your driving licence will be cancelled today unless you pay the fine on this mobile number,1,govt_kra_ntsa
+"Afisa wa uhamiaji hapa, pasipoti yako ina shida, lipa elfu kumi na mbili kwa namba hii haraka",1,govt_kra_ntsa
+Mamlaka ya ushuru inakupa dakika thelathini kulipa deni lako kupitia mpesa binafsi la sivyo tutafunga biashara yako,1,govt_kra_ntsa
+"Land office, your title deed has a dispute, send Ksh 20,000 to this number to stop the process",1,govt_kra_ntsa
+"Kuna warrant of arrest dhidi yako, lipa elfu ishirini sasa kwa afisa wa mahakama kwa mpesa",1,govt_kra_ntsa
+"NHIF imesimamisha kadi yako, tuma elfu moja mia tano kwa namba hii kuirudisha",1,govt_kra_ntsa
+"Mimi ni mkaguzi wa county, leseni yako ya biashara imekwisha, lipa faini kwa namba yangu hapa",1,govt_kra_ntsa
+"Police traffic hapa, tumekushika kwa kosa, tuma elfu mbili kwa mpesa tukuachilie bila kukupeleka kituoni",1,govt_kra_ntsa
+"Mama hii ni namba yangu mpya, ile ya zamani imepotea, tuma elfu tano ya airtime haraka",1,relative_impersonation
+"Hi Dad my phone broke, this is my new number, please send money for rent urgently and don't call",1,relative_impersonation
+"Aunty ni mimi, nimebadilisha simu, tuma pesa ya matatu kwa namba hii, nitakulipa kesho",1,relative_impersonation
+"Shikamoo, nimepoteza simu na pesa zangu, tuma elfu mbili kwa namba hii mpya usimwambie mtu",1,relative_impersonation
+"Hello mum this is Brian new line, I'm stuck can you send Ksh 4,000 right now",1,relative_impersonation
+"Bro ni mimi, nimekwama mahali, tuma elfu tatu kwa namba hii, nitakurudishia usiku",1,relative_impersonation
+"Mzee ni mwanao, nimepata shida chuoni, tuma ada kwa namba hii ya rafiki yangu sasa hivi",1,relative_impersonation
+"Uncle nimepoteza wallet, tuma elfu kumi kwa namba hii na usimwambie baba",1,relative_impersonation
+"Habari mama, nimebadilisha namba, tuma pesa ya kodi kwa namba hii ya mwenye nyumba",1,relative_impersonation
+"Mom I'm in trouble, I can't talk, just send the money to this Mpesa number, I'll explain later",1,relative_impersonation
+"Dada ni mimi nimekwama stage, tuma fare kwa hii namba mpya nitakurudishia",1,relative_impersonation
+"Baba simu yangu imeibiwa, hii ni namba ya rafiki, tuma elfu tano ya ada leo",1,relative_impersonation
+"Tunafanya SIM swap ya dharura, tupe PIN na nambari ya kitambulisho ili tuhamishe line yako",1,sim_swap
+"Piga hii code kwenye simu yako ili tuhifadhi line yako, ni ya Safaricom, usikate simu",1,sim_swap
+"Mtu amefanya SIM swap kwa line yako, tuma PIN yako sasa tuzuie",1,sim_swap
+"Ili kuboresha mtandao wa 5G, tunahitaji ubadilishe SIM, tupe namba ya siri ya line yako",1,sim_swap
+"Kadi yako ya SIM imeisha muda, tuma nambari ya usajili na ID ili tukupe mpya hapa kwa simu",1,sim_swap
+Dial this USSD code to upgrade your SIM and then read us the confirmation message,1,sim_swap
+"Tafadhali usizime simu, tunahamisha line yako kwenye mtandao mpya, soma code inayokuja",1,sim_swap
+Line yako ya Mpesa itafungwa isipokuwa ukitusomea OTP ya SIM swap ambayo imetumwa sasa,1,sim_swap
+"Mama nimeishiwa, tuma elfu mbili ya fare nikuje nyumbani, nitakulipa weekend",0,family_money
+"Baba naomba ada ya chuo, nimekutumia fee structure kwa WhatsApp, tafadhali angalia",0,family_money
+"Dad can you send me rent this month, I'm at the campus gate, call me when you are free",0,family_money
+"Sis nimekutumia pesa ya shopping, angalia mpesa yako, nimelipa leo",0,family_money
+"Mum I will call you tonight, the network is bad here, don't worry I am fine",0,family_money
+"Mzee nimefika salama, nitakupigia kesho nikipata muda, asante kwa pesa ya matatu",0,family_money
+Bro unaweza kunikopesha elfu moja? Nitakurudishia Ijumaa nikipokea mshahara,0,family_money
+"Mama nimeenda kununua unga, nitakuletea chenji ukifika nyumbani",0,family_money
+"Shangazi nakutumia pesa ya harusi kesho, tuonane kanisani",0,family_money
+"Hey, I just sent you the 2000 for the groceries, check your Mpesa balance",0,family_money
+"Dada tuma namba ya till ya duka unalolipia nikulipie mimi, uko wapi sasa",0,family_money
+"Mwanangu ukifika shule nipigie, nimekutumia pesa ya uniform kwa namba yako",0,family_money
+"Wacha nikupigie baadaye, niko kwenye mkutano, tuongee jioni",0,family_money
+"Rafiki yangu aliniomba nimsaidie na rent, nitamtumia kesho nikipata salary",0,family_money
+"Bro umenitumia pesa? Nimeangalia sioni, tuma tena screenshot ya message",0,family_money
+"Tunakupigia kutoka Aga Khan Clinic, kijana wako amepata homa kidogo, tafadhali uje reception",0,genuine_hospital_school
+"Usitume pesa kwa namba ya mtu binafsi, mpigie mtoto uhakikishe, kisha ulipe kwa paybill rasmi ya hospitali",0,genuine_hospital_school
+"Mtoto amepata ajali ndogo shuleni, tafadhali uje shule, tumempeleka kliniki ya shule",0,genuine_hospital_school
+"Daktari anasema vipimo viko sawa, unaweza kuchukua mtoto kesho asubuhi",0,genuine_hospital_school
+"Hospitali imekuita ukamilishe malipo ya bili kwa paybill rasmi, unaweza kupiga reception kuthibitisha",0,genuine_hospital_school
+"This is the school nurse, your daughter has a mild fever, please come and pick her up",0,genuine_hospital_school
+"Your appointment at the clinic is tomorrow at 9am, please carry your NHIF card",0,genuine_hospital_school
+"Mwalimu mkuu anaomba wazazi wote waje mkutano Ijumaa, ada inaweza kulipwa kwa benki",0,genuine_hospital_school
+"Mgonjwa wako ametulia, daktari atakuona ukifika, hakuna haraka usiendeshe kwa kasi",0,genuine_hospital_school
+"Matokeo ya vipimo yako tayari, uje kuyachukua kwa maabara wakati wowote",0,genuine_hospital_school
+"The hospital billing office will email you the invoice, you can pay at the cashier or by official paybill",0,genuine_hospital_school
+"Tafadhali piga namba iliyo kwenye tovuti rasmi ya hospitali kuthibitisha, sisi hatutaki pesa kwa simu",0,genuine_hospital_school
+"Mtoto wako yuko salama, alianguka kidogo uwanjani, tafadhali tuma mtu amchukue",0,genuine_hospital_school
+"Ward four iko ghorofa ya pili, ukifika uliza reception, tutakuonyesha",0,genuine_hospital_school
+"Reminder: your child's vaccination is due next week, call the clinic to book a slot",0,genuine_hospital_school
+"Habari, Equity Bank hapa, tumekutumia statement yako kwa email, hakuna haja ya kufanya chochote",0,bank_legit_info
+"Your account statement is ready, visit the nearest branch with your ID to collect the card",0,bank_legit_info
+"Equity Bank kamwe haitakuomba PIN au OTP kwa simu, tafadhali usimpe mtu yeyote",0,bank_legit_info
+"Hello, this is KCB, we are calling to confirm that you received your new ATM card, no action needed",0,bank_legit_info
+"Benki yako inakukumbusha mkopo wako unaisha mwezi ujao, unaweza kulipa kupitia app rasmi",0,bank_legit_info
+"Karibu tena, kadi yako iko tayari, tafadhali uje tawi la Thika ukiwa na kitambulisho chako",0,bank_legit_info
+"We noticed a new login on your mobile banking, if it was you, ignore this message, otherwise visit a branch",0,bank_legit_info
+"Muamala wako wa elfu mbili umefanikiwa, asante kwa kutumia benki yetu",0,bank_legit_info
+"Never share your OTP or PIN with anyone, even if they claim to be from the bank",0,bank_legit_info
+"Benki inakualika kwenye semina ya biashara ndogo Jumamosi, usajili ni bure",0,bank_legit_info
+"Your loan repayment of Ksh 5,000 is due on the 5th, you can pay through the official app or at the branch",0,bank_legit_info
+"Tafadhali usitume PIN yako kwa mtu, sisi hatuombi nambari ya siri kamwe",0,bank_legit_info
+"Rider wa Glovo niko gate, nakuletea order yako, naomba ufungue",0,delivery_service
+"Hello I am outside your apartment with your parcel from Jumia, which floor are you?",0,delivery_service
+"Nimefika, niko na pizza yako, malipo ni cash ama mpesa kwa till ya kampuni?",0,delivery_service
+"Bolt driver here, I am two minutes away at the main gate",0,delivery_service
+"Fundi wa maji nimefika, naomba uniambie nyumba ipi, niko karibu na duka",0,delivery_service
+"Parcel yako imefika ofisi ya G4S, unaweza kuichukua kesho ukiwa na ID",0,delivery_service
+"Uber niko stage ya matatu, niko na gari nyeupe, nakuja sasa",0,delivery_service
+"Mimi ni mwenye nyumba, nakumbusha kodi ya mwezi huu, unaweza kulipa kwa paybill ya jengo kama kawaida",0,delivery_service
+"Order yako iko njiani, itafika baada ya dakika kumi, tafadhali kuwa tayari kuipokea",0,delivery_service
+"Fundi umeme anakuja kesho asubuhi, tafadhali hakikisha mtu yuko nyumbani",0,delivery_service
+"Niko hapa supermarket nanunua bidhaa, wacha nilipe kwa merchant till",0,merchant_payment
+"Lipa kwa till namba tano moja mbili tisa sifuri sifuri, utapata ujumbe wa mpesa wa kuthibitisha",0,merchant_payment
+"Please pay Ksh 1,850 to our till number, you will receive a confirmation SMS from Mpesa",0,merchant_payment
+"Duka letu linapokea mpesa, bei ya mkate ni hamsini tu",0,merchant_payment
+"Naomba risiti, nimelipa kupitia till, ujumbe umefika kwenye simu yangu",0,merchant_payment
+"Tunakubali cash na mpesa, paybill ya shule ni namba ya account ya mtoto",0,merchant_payment
+"Nililipia umeme kwa paybill ya KPLC, token imefika kwa SMS",0,merchant_payment
+"Pesa za ada nilizilipa jana kupitia bank deposit slip, nitakuletea nakala",0,merchant_payment
+"I paid for the groceries using the till, can you check if the payment shows on your side",0,merchant_payment
+"Nimelipa maji kwa paybill ya kampuni ya maji, ujumbe wa uthibitisho umefika",0,merchant_payment
+"Umefika nyumbani salama? Ndio niko darasani, nitakupigia baadaye",0,casual_daily
+"Tutakutana kesho asubuhi kwa mkutano wa familia, asante sana",0,casual_daily
+"Tutaonana kesho kanisani, usisahau kuleta pesa ya sadaka",0,casual_daily
+"Boss nitakuwa late leo, kuna foleni ndefu kwenye Thika Road",0,casual_daily
+How was your day? Let's meet for lunch on Saturday if you are free,0,casual_daily
+"Mchezo wa jana ulikuwa mzuri sana, tutaangalia mwingine wikendi",0,casual_daily
+"Habari za asubuhi, nimeona ujumbe wako, nitakujibu mchana",0,casual_daily
+"Please send me the report by 5pm, the client meeting is tomorrow morning",0,casual_daily
+"Naomba pin ya wifi ya ofisi, nimesahau",0,casual_daily
+"Happy birthday dear, wish you many blessed years ahead",0,casual_daily
+"Nimenunua mboga sokoni, nitapika ugali na sukuma wiki leo jioni",0,casual_daily
+"Mwalimu anasema mtihani utaanza Jumatatu, tafadhali msomee mtoto vizuri",0,casual_daily
+"Kikao cha vikundi vya akina mama ni Alhamisi, kila mtu alete mchango wake",0,casual_daily
+"Naenda kanisani, nitakupigia nikitoka, usiwe na wasiwasi",0,casual_daily
+"The matatu is stuck in traffic, I will be there in 30 minutes",0,casual_daily
+"Niko sawa, nimerudi kutoka kazini, tutaongea kesho kwa raha",0,casual_daily
+"Safaricom: Your data bundle expires tomorrow, dial *544# to buy a new bundle",0,genuine_telco
+"Karibu Safaricom, umenunua dakika mia moja, zitaisha baada ya siku saba",0,genuine_telco
+"Hello this is Safaricom survey, we would like your feedback on our service, no payment is needed",0,genuine_telco
+"Safaricom haitaomba kamwe PIN yako ya mpesa, tafadhali kuwa makini na matapeli",0,genuine_telco
+"Your Fuliza limit is available, check it via the My Safaricom app, we will never ask for your PIN",0,genuine_telco
+"Tunakukumbusha kuwa line yako itahitaji kusajiliwa upya, tafadhali tembelea duka la Safaricom na kitambulisho chako",0,genuine_telco
+"Airtime yako imeisha, unaweza kununua kupitia mpesa kwa kutumia *144#",0,genuine_telco
+"Customer care hapa, tumepokea malalamiko yako kuhusu mtandao, tunaendelea kulishughulikia, hakuna cha kulipa",0,genuine_telco
+"Nimekutumia pesa ya rent, angalia M-Pesa yako, nimelipa leo",0,money_talk_safe
+"Asante kwa kulipa, nimepokea pesa yako ya mchango wa harusi",0,money_talk_safe
+"Daktari amesema bili ni elfu tatu, nitalipa kwa paybill rasmi ukifika",0,money_talk_safe
+I am sending you the money for the tickets once I get my salary tomorrow,0,money_talk_safe
+"Nimelipa deni langu la duka jana, mwenye duka amethibitisha",0,money_talk_safe
+"Tuma pesa ya chama kwa treasurer kama kawaida, namba yake ipo kwenye group letu la WhatsApp",0,money_talk_safe
+"Mpesa agent amenipa risiti, nimeweka elfu mbili kwenye akaunti yangu",0,money_talk_safe
+"Nilituma pesa ya ada ya mtoto jana, nimepokea ujumbe wa uthibitisho kutoka shule",0,money_talk_safe
+"Kifurushi chako kutoka Uchina kimekwama forodhani, lipa elfu nne ya ushuru kwa namba hii ndipo kitolewe",1,parcel_customs_fee
+"Your DHL parcel is held at customs, pay Ksh 3,500 clearance fee on this Mpesa number to release it today",1,parcel_customs_fee
+"Tuna mzigo wako wa zawadi kutoka Marekani, tuma elfu tano ya kusafirisha kabla ya saa kumi",1,parcel_customs_fee
+Parcel yako haiwezi kuletwa mpaka ulipe ada ya kuhifadhi elfu mbili kwa namba hii ya rider,1,parcel_customs_fee
+"A gift from your friend abroad is waiting, send the delivery tax to this number so we can deliver it",1,parcel_customs_fee
+"Mzigo wako uko Nairobi, lipa elfu moja mia tano ya posta kwanza kwa mpesa binafsi nikuletee",1,parcel_customs_fee
+"Wekeza elfu kumi leo upate elfu hamsini baada ya siku saba, hakuna hasara, tuma kwa namba hii",1,investment_crypto
+"Join our forex group, deposit Ksh 5,000 and we double it in 48 hours guaranteed",1,investment_crypto
+"Chama chetu cha uwekezaji kinalipa asilimia hamsini kwa wiki, jiunge sasa kwa kutuma elfu mbili kwa mpesa",1,investment_crypto
+"Bitcoin mining inakulipa kila siku, weka elfu tatu kuanza, pesa yako itarudi mara mbili",1,investment_crypto
+"Limited slots: invest now with Ksh 2,000 and withdraw Ksh 10,000 tomorrow, send to this till number",1,investment_crypto
+"Biashara yetu ya mtandaoni haina hasara, tuma elfu ishirini ya kuanzia, faida ni uhakika",1,investment_crypto
+"Naweza kukuonyesha siri ya kutajirika haraka, tuma elfu moja ya kozi kwa namba hii leo",1,investment_crypto
+"Pyramid mpya, ukileta watu watatu unapata elfu kumi, jiandikishe kwa kulipa elfu mbili sasa",1,investment_crypto
+"Habari mpenzi, niko Uingereza, nimekutumia zawadi, lipa elfu sita ya forodha ili ipokelewe",1,romance_abroad
+"Darling I am stuck at the airport, please send Ksh 15,000 to this number and I will repay you when I land",1,romance_abroad
+"Nakupenda sana, nina shida ya hospitali hapa ng'ambo, tuma elfu ishirini kwa mpesa usimwambie yeyote",1,romance_abroad
+"My love my wallet was stolen, send me money for the ticket to this Mpesa number, I will come see you",1,romance_abroad
+"Mpenzi nimekwama uwanja wa ndege, tuma elfu kumi ya ada ya kuondoka kwa namba hii, nitakulipa kesho",1,romance_abroad
+"Nyumba ya vyumba viwili Kilimani ni elfu kumi tu, tuma deposit ya elfu ishirini kwa mpesa kushika nafasi leo",1,fake_landlord_rent
+"Bedsitter inapatikana Roysambu, lipa kodi ya mwezi mmoja mapema kwa namba hii, funguo utapewa kesho",1,fake_landlord_rent
+"I am the agent, the apartment is available, send the booking fee of Ksh 5,000 before someone else takes it",1,fake_landlord_rent
+"Mwenye nyumba yuko nje ya nchi, tuma deposit kwa namba ya wakili wake, utapata funguo ukituma risiti",1,fake_landlord_rent
+"House for rent in Kitengela, pay viewing fee Ksh 1,000 on Mpesa first and I will send the address",1,fake_landlord_rent
+"Tunakusanya pesa kwa ajili ya mtoto mgonjwa, tuma mchango wowote kwa namba hii binafsi sasa hivi",1,fake_charity_harambee
+Pastor amesema tuma sadaka ya shukrani elfu tano kwa namba hii ili upate baraka na kazi wiki hii,1,fake_charity_harambee
+"Harambee ya dharura ya mazishi, tuma elfu mbili kwa namba hii ya mtu wa familia, usipigie mtu kuthibitisha",1,fake_charity_harambee
+"Support the orphans, send your donation to this personal number today, God will bless you",1,fake_charity_harambee
+"Mganga wetu atakusaidia kupata pesa, tuma elfu tatu ya kuanza matambiko kwa mpesa",1,fake_charity_harambee
+"SHA imekuchagua kupokea fidia ya elfu thelathini, tuma elfu mbili ya usajili ili upokee",1,fake_insurance_sha
+"Your NHIF refund is ready, confirm your ID number and PIN to receive Ksh 20,000",1,fake_insurance_sha
+"Bima yako ya gari imeisha, lipa elfu nane kwa namba hii leo la sivyo utakamatwa barabarani",1,fake_insurance_sha
+"Insurance claim approved, pay the release fee of Ksh 4,000 to this number to get your payout",1,fake_insurance_sha
+"Mamlaka ya bima inakupigia, una malipo ya kurudishiwa, tupe namba ya siri ya mpesa kuyaweka",1,fake_insurance_sha
+"KPLC hapa, umeme wako utakatwa saa moja, nunua token ya elfu mbili kwa namba hii ya afisa wetu",1,fake_kplc_water
+"Your electricity will be disconnected today, pay the arrears Ksh 6,500 to this personal number immediately",1,fake_kplc_water
+"Afisa wa maji anasema una deni, lipa elfu tatu kwa namba hii sasa hivi ama tukate maji",1,fake_kplc_water
+"Kenya Power inakupa punguzo la bili, tuma PIN yako ya mpesa kuthibitisha akaunti yako ya umeme",1,fake_kplc_water
+"Pakua app hii upate mkopo wa papo hapo, lipa ada ya elfu moja kwanza kuamilisha",1,fake_loan_betting_app
+"Your betting account has a free bonus of Ksh 20,000, deposit Ksh 1,000 to unlock withdrawal",1,fake_loan_betting_app
+"Ushindi wako wa betting umefika elfu hamsini, lipa ada ya kutoa pesa elfu mbili kwa namba hii",1,fake_loan_betting_app
+"Instant loan without papers, send the verification fee to this number and the loan lands in 5 minutes",1,fake_loan_betting_app
+"Samahani kaka, ile pesa niliyokutumia si yako, ni ya mama yangu anaumwa, tafadhali irudishe sasa hivi",1,mpesa_reversal_v2
+"Hallo, nimetuma elfu nane kwa number isiyo sahihi, naomba unirudishie, nitakupa shukrani",1,mpesa_reversal_v2
+"Please help me, I sent Ksh 12,000 to your number by mistake, reverse it now before my boss finds out",1,mpesa_reversal_v2
+"Ulipokea elfu tano kutoka kwangu? Ni kosa la kidole, tuma tena kwa namba hii ya rafiki yangu",1,mpesa_reversal_v2
+"Sir, my Mpesa has sent money to you wrongly, kindly return it to this number, I am in a hurry",1,mpesa_reversal_v2
+"Nimeona nimekutumia pesa ya kulipia kodi kimakosa, rudisha kabla mwenye nyumba hajafika",1,mpesa_reversal_v2
+"UCM8K2L1PQ Confirmed. You have received Ksh 9,000 from PETER OMONDI. Please return it, it was sent wrongly",1,mpesa_reversal_v2
+"Ujumbe wa mpesa umeingia kwenye simu yako, ile pesa ni ya mtu mwingine, tafadhali irudishe leo hii",1,mpesa_reversal_v2
+"Habari, naitwa Mary kutoka Safaricom, tumeona matatizo na line yako, tafadhali tuambie PIN ya Mpesa tuirekebishe",1,fake_agent_pin_otp_v2
+"Hello sir, I am calling from KCB fraud team, someone is trying to withdraw from your account, give me the code that just came by SMS",1,fake_agent_pin_otp_v2
+"Mteja wetu mpendwa, akaunti yako ya Mpesa imefungwa, bonyeza nambari yako ya siri ili kuifungua sasa",1,fake_agent_pin_otp_v2
+"This is Safaricom, we are upgrading Mpesa, kindly confirm your PIN so you do not lose your balance",1,fake_agent_pin_otp_v2
+"Tuko benki ya Equity, kadi yako imezuiwa, soma namba ya uthibitisho tuliyotuma ili tuifungue",1,fake_agent_pin_otp_v2
+"Please enter your Mpesa PIN on the prompt we are sending, it is only a verification, do not hang up",1,fake_agent_pin_otp_v2
+"Nakupigia kutoka makao makuu ya Safaricom, umechaguliwa kwa uboreshaji wa bure, tupe nambari yako ya siri",1,fake_agent_pin_otp_v2
+"Your Equity account is compromised, to secure it tell me the one time password sent to your number now",1,fake_agent_pin_otp_v2
+"Afisa wa Airtel hapa, tunarudisha pesa ulizokosea, weka PIN yako kwenye ujumbe utakaokuja",1,fake_agent_pin_otp_v2
+"I am from the bank, I need you to confirm your ATM PIN and the three digits behind your card",1,fake_agent_pin_otp_v2
+"Sasisho la usajili wa Mpesa linahitaji PIN yako, usikate simu hadi tumalize",1,fake_agent_pin_otp_v2
+"Mteja, tunahitaji nambari uliyoipokea kwa SMS, ni ya usalama wako, tafadhali isome sasa",1,fake_agent_pin_otp_v2
+"Msee mtoi wako ameshikwa na ma-cop, tuma ngovo kwa hii number fast ama atakaa ndani",1,sheng_coercion
+"Boss kuna issue kubwa, ukiskia hii simu usiseme na mtu, tuma doo kwa namba hii sasa hivi",1,sheng_coercion
+"Maze mamako yuko hosi anakufa, tuma elfu tano kwa hii nambari ya doc, fanya haraka",1,sheng_coercion
+"Bro nimekwama sana, tuma mia tano ya fare kwa hii number mpya, nitakurudishia kesho",1,sheng_coercion
+"Wasee wa KRA wamekuja kwa duka lako, tuma elfu kumi kwa mimi niwatulize, usipigie mtu",1,sheng_coercion
+"Rafiki yako yuko cell, tuma pesa ya bail kwa hii namba ama atafungwa leo usiku",1,sheng_coercion
+"Mzae, pesa ya fee ya kijana iko kwa hii namba, tuma sasa ama atafukuzwa shule kesho",1,sheng_coercion
+"Fanya haraka tuma doo, kijana wako yuko hosi hawataki kumtreat bila deposit kwa namba hii",1,sheng_coercion
+"UBC91K3M2N Confirmed. You have received Ksh25,000.00 from ANN WAMBUI. Kindly reverse the amount sent in error to this number",1,spoofed_mpesa_sms
+"Umepokea Ksh12,000 kutoka kwa JOHN. Tuma kwa namba hii 0711000000 kwa makosa, asante",1,spoofed_mpesa_sms
+"MPESA Confirmed Ksh8,500 received. Reversal needed urgently, call me back on this number and do not delay",1,spoofed_mpesa_sms
+"Ujumbe: Umetumiwa Ksh4,200. Tafadhali rudisha kwa namba ya mtumaji kabla ya saa mbili usiku",1,spoofed_mpesa_sms
+"Your Fuliza has been repaid by mistake, return Ksh 3,000 to this number to avoid penalty",1,spoofed_mpesa_sms
+"Pesa ya mkopo imeingia kwa makosa kwa akaunti yako, rudisha kwa namba hii ndani ya saa mbili",1,spoofed_mpesa_sms
+"Kampuni yetu imekuchagua kwa kazi, tupe nambari ya ID na PIN ya mpesa kwa malipo ya mshahara wa kwanza",1,fake_employer_id
+"HR hapa, to process your salary send us your Mpesa PIN and ID photo today",1,fake_employer_id
+"Umepata kazi serikalini, lipa elfu nne ya fomu kwa namba hii ili jina lako liingie kwenye orodha",1,fake_employer_id
+"Job confirmed, pay uniform and training fee Ksh 3,500 before Monday or the slot goes to someone else",1,fake_employer_id
+"Mimi ni wakili wa kijana wako, amekamatwa, tuma elfu kumi na tano ya bail sasa usimwambie mtu",1,lawyer_bail
+"This is the court registrar, your brother has a case, send Ksh 20,000 to this number to avoid jail tonight",1,lawyer_bail
+"Wakili anasema pesa ya dhamana lazima ipitie kwa namba yake binafsi sasa hivi, usikate simu",1,lawyer_bail
+"Your daughter is detained at the station, pay the cash bail to this Mpesa number immediately",1,lawyer_bail
+Hakimu ameamuru malipo ya faini elfu kumi na tano kwa mpesa binafsi leo la sivyo atafungwa,1,lawyer_bail
+"Mama nitakutumia mpesa sasa hivi ya matumizi, angalia simu yako baada ya dakika tano",0,direction_money_safe
+"Nimekutumia elfu mbili ya chakula, umepokea? Niambie ukipata",0,direction_money_safe
+"I will send you the rent right now, just confirm your till number first",0,direction_money_safe
+"Baba nimetuma pesa ya ada jana, risiti ya benki nitakuletea kesho",0,direction_money_safe
+"Hey I am sending the 3000 now, check your phone and tell me when it lands",0,direction_money_safe
+"Dada nitakulipa deni lako kesho asubuhi nikipokea pesa, usiwe na wasiwasi",0,direction_money_safe
+"Shosh nimekutumia pesa ya zawadi ya harusi, kumbuka kuniambia ukipata",0,direction_money_safe
+"Nitakutumia fare sasa hivi, usitoke, nakupigia nikimaliza",0,direction_money_safe
+"Nimeshatuma elfu tano ya chama, mweka hazina amethibitisha ameipata",0,direction_money_safe
+"I just paid your invoice by Mpesa, please confirm and send me the receipt",0,direction_money_safe
+"Mtoto wangu nakutumia pesa ya shule sasa hivi, nitumie picha ya risiti ukilipa",0,direction_money_safe
+"Wacha nikutumie hela ya mkate sasa hivi, uko wapi?",0,direction_money_safe
+"Mwenye nyumba anasema kodi ni ya tarehe tano, lipa kwa paybill ya jengo kama kawaida",0,real_landlord_utilities
+"Reminder: your rent is due on the 5th, please pay via the building paybill and keep the receipt",0,real_landlord_utilities
+"Fundi wa maji atakuja kesho saa nne, tafadhali kuwa nyumbani",0,real_landlord_utilities
+"Bili ya umeme ya mwezi huu ni elfu moja na mia nane, unaweza kulipa kupitia app ya KPLC",0,real_landlord_utilities
+"Landlord here, the water will be off on Saturday morning for repairs, sorry for the inconvenience",0,real_landlord_utilities
+"Naomba risiti ya kodi ya mwezi uliopita, nilipa kwa paybill na ujumbe haujafika",0,real_landlord_utilities
+"Mchango wa harusi ya Jane unaendelea, lipa kwa paybill rasmi ya kanisa iliyo kwenye tangazo",0,chama_church_genuine
+"Kikao cha chama kesho saa nane, kila mwanachama alete mchango wake wa mwezi",0,chama_church_genuine
+"The church building fund account number is on the notice board, please pay at the bank or the official paybill",0,chama_church_genuine
+"Asante kwa mchango wako, tumepokea na tutatoa risiti jumapili",0,chama_church_genuine
+"Mazishi ni Jumamosi, tutakutana kwa nyumba ya marehemu saa tatu asubuhi",0,chama_church_genuine
+"Treasurer here, please send the monthly contribution to the usual group number and post the message in the group",0,chama_church_genuine
+"NTSA: renew your licence on eCitizen, we never ask for payments on personal numbers",0,genuine_gov_info
+"KRA inakukumbusha tarehe ya mwisho ya kuwasilisha ripoti ya kodi ni tarehe thelathini, tumia iTax rasmi",0,genuine_gov_info
+"Your Huduma Namba is ready for collection at the nearest Huduma Centre, bring your ID",0,genuine_gov_info
+"Wizara ya elimu inatangaza matokeo yatatoka Ijumaa, angalia kwenye tovuti rasmi",0,genuine_gov_info
+"The county office confirms your business permit is ready, you can pay at the revenue office or via the official paybill",0,genuine_gov_info
+"Police: if anyone calls asking for money to release a relative, hang up and visit the station",0,genuine_gov_info
+"Hello, this is G4S courier, your parcel is at the office, please come with your ID before 5pm",0,genuine_courier
+"Dereva wa Sendy hapa, niko mlangoni na mzigo wako, tafadhali toka nje",0,genuine_courier
+"Your Jumia order has been delivered, thank you for shopping with us",0,genuine_courier
+"Mzigo wako umefika stage, malipo ya usafiri uliyokubaliana ni mia tatu, utanilipa ukichukua",0,genuine_courier
+"DHL: your shipment is out for delivery today, no payment is required, please keep your phone on",0,genuine_courier
+"Posta imekutumia ujumbe, kifurushi kiko ofisini, hakuna ada ya ziada",0,genuine_courier
+"Salamu, hii ni M-Shwari, deni lako litaisha tarehe kumi, unaweza kulipa kupitia app rasmi",0,genuine_loan_reminder
+"Your Fuliza balance is Ksh 500, repay through Mpesa when you receive your next income",0,genuine_loan_reminder
+"Sacco yako inakukumbusha kikao cha wanachama kitakuwa Jumamosi, hakuna malipo ya ziada",0,genuine_loan_reminder
+"Your loan statement is available in the app, no action needed, thank you for banking with us",0,genuine_loan_reminder
+"Tunakupongeza kwa kulipa mkopo wako kwa wakati, kikomo chako kimeongezeka kupitia app",0,genuine_loan_reminder
+"Hustler Fund: repay your loan via the official paybill, we will never ask you for your PIN",0,genuine_loan_reminder
+"Sisi hatukuombi PIN wala OTP kwa simu, ukipigiwa na mtu anayeomba, kata simu na utuite kupitia namba rasmi",0,bank_telco_fraud_warning
+"Beware of fraudsters, never share your PIN, OTP or card details with anyone on a call",0,bank_telco_fraud_warning
+"Tafadhali usitume pesa kwa namba binafsi ukidai ni ya benki, tumia paybill rasmi pekee",0,bank_telco_fraud_warning
+"KCB will never call you to ask for your PIN, if someone does, report it on our hotline",0,bank_telco_fraud_warning
+"Ukipata ujumbe wa kuomba PIN yako, usijibu, na ripoti kwa Safaricom kupitia 333",0,bank_telco_fraud_warning
+"Safaricom reminds customers that Mpesa reversals are only done through 456, never through personal calls",0,bank_telco_fraud_warning
+"Equity yaonya wateja dhidi ya matapeli wanaojifanya wafanyakazi wa benki, usitoe taarifa zako",0,bank_telco_fraud_warning
+"Do not respond to messages asking you to reverse money to a personal number, forward them to 333",0,bank_telco_fraud_warning
+"HR hapa, mkataba wako uko tayari, uje ofisini kuusaini ukiwa na ID yako",0,hr_genuine
+"Your payslip for this month is ready on the staff portal, no action needed",0,hr_genuine
+"Mkutano wa wafanyakazi ni kesho saa tatu, tafadhali usichelewe",0,hr_genuine
+"Congratulations on your interview, we will send an offer letter by email, there is no fee at any stage",0,hr_genuine
+"Kampuni haitozi pesa yoyote kwa waombaji wa kazi, ripoti mtu yeyote anayeomba pesa",0,hr_genuine
+"Bili yako ya hospitali ni elfu kumi na mbili, tafadhali ulipe kwa paybill rasmi kwenye ankara uliyopewa",0,hospital_billing_insurance
+"SHA imekubali matibabu ya mama yako, hakuna malipo ya ziada, tafadhali leta kitambulisho",0,hospital_billing_insurance
+"Your insurance has approved the claim, the hospital will bill them directly, you do not need to pay anything now",0,hospital_billing_insurance
+"Daktari ameagiza apumzike nyumbani wiki mbili, tutakupa dawa na tarehe ya kurudi",0,hospital_billing_insurance
+"The ambulance is on the way to the school, please meet us at the hospital reception",0,hospital_billing_insurance
+"Mgonjwa amehamishwa wodi ya kawaida, unaweza kumtembelea saa nane hadi kumi",0,hospital_billing_insurance
+"Mtoto wako yuko sawa, tulimpa dawa ya homa, uje umchukue ukiwa tayari",0,hospital_billing_insurance
+"Please do not send money to anyone claiming to be a doctor, payments are only at the hospital cashier",0,hospital_billing_insurance
+"Niaje msee, leo kuna game ya Gor, tutaenda kuangalia kwa mtaa saa nane",0,casual_sheng
+"Mambo vipi, nimefika job, tutaongea nikitoka, niko na kazi nyingi",0,casual_sheng
+"Maze nimechoka sana leo, foleni ya Mombasa Road ilikuwa mbaya",0,casual_sheng
+"Bro tuonane wikendi, nitakuletea ile kitabu ulikuwa unataka",0,casual_sheng
+Wasee wa campus wanasema exam imesogezwa hadi Alhamisi,0,casual_sheng
+"Kijana nimeamka late, nikufikie baada ya lunch tuongee",0,casual_sheng
+"Rada ya bro, kuja kesho saa nne tuende kwa mechi",0,casual_sheng
+"Nipigie usiku nikiwa free, leo niko busy na mambo ya ofisi",0,casual_sheng
+"Shosh tutakutana kwa mall ama?, niko na sh elfu moja ya kununua zawadi",0,casual_sheng
+"Hii wiki imekuwa ndefu, wikendi nitapumzika tu nyumbani",0,casual_sheng
+"Umepokea pesa niliyotuma? Niliandika namba yako vizuri, hakikisha kwenye ujumbe wa mpesa",0,mpesa_chatter_genuine
+"I got your Mpesa message, thanks, the balance is fine, no need to send anything else",0,mpesa_chatter_genuine
+"Pesa ya mboga ni mia nane, nimeituma kwa till ya duka, risiti ipo",0,mpesa_chatter_genuine
+"Nimepokea elfu mbili uliyonitumia, asante sana, nitakupigia jioni",0,mpesa_chatter_genuine
+"Mpesa imekataa kutuma, mtandao ni mbaya, nitajaribu tena baadaye",0,mpesa_chatter_genuine
+"I paid the school fees through the official paybill, the account number was the admission number",0,mpesa_chatter_genuine
+"Asante kwa kulipia mboga, nimepata ujumbe wa mpesa, kila kitu sawa",0,mpesa_chatter_genuine
+"Please check your Mpesa statement, I think I paid twice, if so I will ask the shop to refund me in cash",0,mpesa_chatter_genuine
+"Safaricom: Bundles za Tunukiwa zimeisha, nunua zaidi kupitia *544# au app ya My Safaricom",0,telco_genuine_v2
+"Hello, this is Airtel customer care, we are calling to confirm your network complaint was resolved, no action needed",0,telco_genuine_v2
+"Usajili wa line yako umekamilika, asante kwa kutumia Safaricom",0,telco_genuine_v2
+Your Mpesa statement for the month has been sent to your email address,0,telco_genuine_v2
+Safaricom inakuarifu kuwa huduma ya Mpesa itakuwa chini kwa matengenezo Jumapili usiku,0,telco_genuine_v2
+"Telkom: your data bundle will expire tomorrow, top up via the app",0,telco_genuine_v2
+"Tafadhali tuma ripoti kabla ya saa kumi, ni haraka kidogo, mteja anasubiri",0,general_asks_safe
+"Send me the address of the venue now, we are leaving in ten minutes",0,general_asks_safe
+"Naomba unitumie namba ya mama, nimepoteza simu yangu ya zamani",0,general_asks_safe
+Please confirm you have received the documents by email and call me back today,0,general_asks_safe
+"Kuja haraka nyumbani, kuna wageni wamefika na wanakungoja",0,general_asks_safe
+"Don't forget to call your mother today, she was asking about you",0,general_asks_safe
+Usisahau kulipa ada ya shule kwa paybill rasmi kabla ya mwisho wa mwezi,0,general_asks_safe
+"Tafadhali nipigie, nahitaji kuongea nawe kuhusu mkutano wa kesho",0,general_asks_safe
